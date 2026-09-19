@@ -12,5 +12,5 @@
 # titled `release: vX.Y.Z`, merge, then tag the merge commit `vX.Y.Z`
 # and push. The tag fires the release workflow.
 
-export WATCH_CLI_VERSION="1.1.0"
+export WATCH_CLI_VERSION="1.2.0"
 export WATCH_CLI_VERSION_STRING="watch-cli v${WATCH_CLI_VERSION}"
