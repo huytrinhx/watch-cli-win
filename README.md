@@ -72,21 +72,84 @@ On Debian/Ubuntu:
 sudo apt install yt-dlp ffmpeg jq python3 curl
 ```
 
-**Windows** runs watch-cli inside **WSL2**, not directly in PowerShell or cmd.exe:
+### Windows
+
+watch-cli is a Bash tool, so on Windows it runs inside **WSL2** (a real
+Ubuntu Linux environment that lives alongside Windows) — never directly
+in PowerShell or cmd.exe. If you've never used WSL before, follow these
+steps in order; each one only takes a minute.
+
+**Step 1 — Install WSL2.**
+Open **PowerShell as Administrator** (right-click the Start button →
+"Terminal (Admin)" or "Windows PowerShell (Admin)") and run:
 
 ```powershell
-wsl --install          # from an elevated PowerShell, then reboot if prompted
+wsl --install
 ```
 
-Open the **Ubuntu** app from the Start menu and install the same way as
-Linux, from that terminal:
+This installs Ubuntu inside Windows. If it asks you to reboot, do that,
+then continue below.
+
+**Step 2 — Open the Ubuntu terminal.**
+After the reboot (or once the install finishes), click the Start
+menu, type `Ubuntu`, and open the **Ubuntu** app. A black terminal
+window opens. The first time it runs, it will ask you to create a
+Linux username and password — pick anything, this is separate from
+your Windows login. **Do all the remaining steps inside this Ubuntu
+window**, not in PowerShell or cmd.exe.
+
+**Step 3 — Install the prerequisites.**
+watch-cli composes a few small, well-known tools: `yt-dlp` (video
+downloader), `ffmpeg` (audio/video processing), `jq` (JSON parsing),
+`curl` (downloads), and `python3`. Install them all with one command:
 
 ```bash
-sudo apt install yt-dlp ffmpeg jq python3 curl
+sudo apt update
+sudo apt install -y yt-dlp ffmpeg jq python3 curl
+```
+
+`sudo apt update` refreshes Ubuntu's package list; `sudo apt install`
+installs the tools. You'll be asked for the Linux password you set in
+Step 2 — typing it won't show any characters on screen, that's normal,
+just type it and press Enter.
+
+**Step 4 — Run the installer.**
+
+```bash
 curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 ```
 
-Always run `watch <url>` from that Ubuntu/WSL terminal, not from
+This downloads and installs watch-cli itself. You should see output
+like this when it finishes successfully:
+
+```text
+watch-cli installer
+===================
+Detected WSL — installing as a native Linux environment.
+✓ Dependencies present (yt-dlp, ffmpeg, jq, curl, python3)
+Downloading https://github.com/huytrinhx/watch-cli-win/releases/latest/download/watch-cli.tar.gz …
+✓ tarball SHA256 verified
+✓ watch-cli installed at /home/<you>/.watch-cli (from release tarball)
+✓ Symlinked binaries to /home/<you>/.local/bin
+
+Done. Try it:
+    watch https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```
+
+> If you instead see a yellow line saying
+> `⚠ /home/<you>/.local/bin is not in your PATH`, copy the
+> `export PATH=...` line it prints, paste it into the terminal, press
+> Enter, then also add that same line to the end of `~/.bashrc` so it
+> still works the next time you open Ubuntu:
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+> ```
+
+**Step 5 — Get your API key.** The installer also prints a Kyma
+signup banner — continue to [Setup](#setup) below for the exact,
+step-by-step version of what to do with it.
+
+Always run `watch <url>` from the Ubuntu/WSL terminal, not from
 PowerShell or cmd.exe — those shells can't execute Bash scripts. See
 [docs/platforms.md](docs/platforms.md#windows) for details and gotchas.
 
@@ -136,14 +199,75 @@ cd ~/.watch-cli && ./install.sh
 
 ## Setup
 
+watch-cli needs one API key to transcribe and understand audio. Here's
+the full walkthrough, step by step — no prior command-line experience
+needed.
+
+**Step 1 — Get a free Kyma key.**
+Open [kymaapi.com](https://kymaapi.com?utm_source=watch-cli) in your
+browser (on Windows, any normal browser works — you don't need to be
+inside WSL for this part). Sign up — about 60 seconds, no credit card.
+Once signed up, copy your API key; it looks like `kyma-xxxxxxxxxxxx`.
+
+**Step 2 — Open the env file in a text editor.**
+Back in your Ubuntu/WSL terminal, the installer already created a file
+for you at `~/.config/watch-cli/env`. Open it with `nano`, a simple
+terminal text editor:
+
 ```bash
-export KYMA_API_KEY=kyma-xxxxxxxx
+nano ~/.config/watch-cli/env
 ```
 
-Get a Kyma key at [kymaapi.com](https://kymaapi.com?utm_source=watch-cli). About 60 seconds, no card.
+**Step 3 — Add your key.**
+You'll see a line that looks like:
+
+```
+KYMA_API_KEY=
+```
+
+Use the arrow keys to move the cursor to the end of that line, and
+type your key right after the `=` (no spaces, no quotes needed):
+
+```
+KYMA_API_KEY=kyma-xxxxxxxxxxxx
+```
+
+**Step 4 — Save and exit nano.**
+Press `Ctrl+O` (that's the letter O, not zero) to save, then press
+`Enter` to confirm the filename, then `Ctrl+X` to exit back to the
+terminal.
+
+**Step 5 — Try it.**
+
+```bash
+watch https://www.youtube.com/watch?v=dQw4w9WgXcQ
+```
+
+watch-cli reads `~/.config/watch-cli/env` automatically on every run —
+you don't need to restart the terminal, edit `~/.bashrc`, or `export`
+anything by hand. If it works, you'll see `VIDEO:`, `FRAMES:`, and
+`TRANSCRIPT:` sections printed out.
+
+A few other commands to try once that works — see [Commands](#commands)
+for the full list:
+
+```bash
+# Just get the transcript (no video download step to look at)
+transcribe https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Ask a question about the audio itself — tone, music, SFX, language
+audio-q https://www.youtube.com/watch?v=dQw4w9WgXcQ "What's the tone of this video?"
+
+# Confirm your key works and see which models are live on Kyma
+models
+
+# See everything you've already watched
+watch-archive ls
+```
 
 Prefer bring-your-own-keys? Comment in `GROQ_API_KEY` and `GOOGLE_AI_KEY`
-in `.env.example` and watch-cli falls back to direct provider calls.
+in the same file (`~/.config/watch-cli/env`) and watch-cli falls back to
+direct provider calls.
 
 Runs on [Kyma API](https://kymaapi.com?utm_source=watch-cli): one key covers speech-to-text and audio scene Q&A for every `watch` / `transcribe` / `audio-q` run.
 
