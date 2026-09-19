@@ -130,11 +130,17 @@ case "$WATCH_AUDIO_MODE" in
     # /dev/null right after threw it straight away — a connection-level
     # failure (DNS, TLS, timeout, reset) showed no diagnostic at all.
     # Capture it instead so it can be printed.
+    #
+    # A flat --max-time punishes a slow-but-working upload exactly like a
+    # dead one. --speed-limit/--speed-time aborts on an actual stall
+    # (sustained near-zero throughput) instead, so a slow connection gets
+    # to finish while a genuinely hung one still gets caught quickly.
     CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
-      --max-time 300 \
+      --max-time 1800 \
+      --speed-limit 512 --speed-time 30 \
       -H "Authorization: Bearer $KYMA_API_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       -F "file=@$AUDIO;type=audio/mpeg" \
@@ -190,11 +196,14 @@ case "$WATCH_AUDIO_MODE" in
         generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
       }')"
 
+    # See the kyma branch above for why this aborts on a stall, not a
+    # flat wall-clock cap.
     CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
-      --max-time 300 \
+      --max-time 1800 \
+      --speed-limit 512 --speed-time 30 \
       -H "Content-Type: application/json" \
       -H "x-goog-api-key: $GOOGLE_AI_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \

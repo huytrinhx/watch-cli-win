@@ -305,11 +305,19 @@ PY
     # an HTTP response with a status code) always printed the same
     # contentless "Kyma request failed" with no way to tell why. Capture
     # curl's stderr instead and print it on failure.
+    # A flat --max-time punishes a slow-but-working upload exactly like a
+    # dead one: a large file on a slow link can need many minutes, and
+    # killing that at an arbitrary wall-clock cap discards real progress
+    # for no reason. --speed-limit/--speed-time aborts on an actual
+    # stall (sustained near-zero throughput) instead, so a slow connection
+    # gets to finish while a genuinely hung one still gets caught quickly.
+    # --max-time stays as an outer safety net against a true runaway hang.
     CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
-      --max-time 300 \
+      --max-time 1800 \
+      --speed-limit 512 --speed-time 30 \
       -H "Authorization: Bearer $KYMA_API_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       "${ARGS[@]}" \
@@ -360,11 +368,14 @@ PY
     # See the kyma branch above for why stderr is captured instead of
     # discarded: -sS re-enables curl's own error text, and a bare
     # 2>/dev/null was throwing it straight back away.
+    # See the kyma branch above for why this aborts on a stall, not a
+    # flat wall-clock cap.
     CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
-      --max-time 300 \
+      --max-time 1800 \
+      --speed-limit 512 --speed-time 30 \
       -H "Authorization: Bearer $GROQ_API_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       "${ARGS[@]}" \
