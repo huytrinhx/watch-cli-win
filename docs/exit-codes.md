@@ -92,7 +92,7 @@ allowed).
 | Tag | Where | Meaning |
 |---|---|---|
 | `audio-q-requires-api` | `audio-q` | Audio understanding has no local backend. Unlike `transcribe`, it cannot run offline and needs an API route. |
-| `platform-probe-fail` | `watch` | **Warning, not a failure.** The pre-flight probe found yt-dlp's extractor for this domain looks broken today. The run continues; the exit code is unaffected. Surfaces early so a doomed download is not blamed on the schema. Run `yt-dlp -U` if the download does fail. |
+| `platform-probe-fail` | `watch`, `listen` | **Warning, not a failure — and often a false alarm.** The pre-flight probe found yt-dlp's extractor for this domain looks broken today, but the probe has a short timeout and YouTube's own multi-step extraction can legitimately take longer than that on a slow connection; a single slow probe is cached as "fail" for 15 minutes, so you may see this a few times even though real downloads are working. The run continues either way; the exit code is unaffected. Run `yt-dlp -U` if the download does fail. |
 | `insufficient-disk` | `install.sh` | Less than the required free space for the local model download. |
 | `model-checksum-mismatch` | `install.sh` | The downloaded model file failed its SHA256 check. Treated as a hard failure rather than a warning, because a corrupt model produces plausible-looking wrong transcripts. |
 | `tarball-checksum-mismatch` | `install.sh` | The release tarball failed its SHA256 check. Hard failure — the install stops rather than unpacking unverified bytes. |

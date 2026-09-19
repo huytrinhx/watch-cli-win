@@ -7,9 +7,14 @@
 # possible cause of a failed probe).
 #
 # Cache: /tmp/watch-cli-health/<domain>.<status> where status is `ok`
-# or `fail`. TTL is 24h based on file mtime. Cached `ok` is silent.
-# Cached `fail` re-emits the warning so the user sees it on every
-# attempt within the window.
+# or `fail`. Cached `ok` is silent and good for 24h — a working
+# extractor is a stable fact. Cached `fail` re-emits the warning on
+# every attempt but expires much sooner (15m): a probe "failure" is
+# often just the platform being slow that one moment (YouTube's own
+# --simulate can take several sequential round-trips — webpage, player
+# API, m3u8 info — comfortably longer than the probe's timeout), not a
+# real breakage, and 24h of repeated false alarms from one slow moment
+# is worse than re-checking again soon.
 
 # Not exported — see lib/hash.sh for why an exported guard breaks a
 # child process that sources this file again to get its own functions.
@@ -17,8 +22,9 @@
 WATCH_CLI_HEALTH_LOADED=1
 
 WATCH_HEALTH_CACHE_DIR="${WATCH_HEALTH_CACHE_DIR:-/tmp/watch-cli-health}"
-WATCH_HEALTH_TTL_SECONDS="${WATCH_HEALTH_TTL_SECONDS:-86400}"  # 24h.
-WATCH_HEALTH_TIMEOUT_SECONDS="${WATCH_HEALTH_TIMEOUT_SECONDS:-5}"
+WATCH_HEALTH_TTL_SECONDS="${WATCH_HEALTH_TTL_SECONDS:-86400}"        # ok: 24h.
+WATCH_HEALTH_FAIL_TTL_SECONDS="${WATCH_HEALTH_FAIL_TTL_SECONDS:-900}" # fail: 15m.
+WATCH_HEALTH_TIMEOUT_SECONDS="${WATCH_HEALTH_TIMEOUT_SECONDS:-10}"
 
 # Map of domain → canary URL.
 #
@@ -71,10 +77,11 @@ _health_domain_from_url() {
 }
 
 # Returns 0 if cache hit within TTL, 1 otherwise. Echoes the cached
-# status (`ok` / `fail`) on stdout when fresh.
+# status (`ok` / `fail`) on stdout when fresh. `ok` and `fail` use
+# different TTLs — see the constants above for why.
 _health_cache_lookup() {
   local domain="$1"
-  local f
+  local f ttl
   for status in ok fail; do
     f="$WATCH_HEALTH_CACHE_DIR/${domain}.${status}"
     if [[ -f "$f" ]]; then
@@ -87,7 +94,9 @@ _health_cache_lookup() {
       fi
       now="$(date +%s)"
       age=$((now - mtime))
-      if (( age < WATCH_HEALTH_TTL_SECONDS )); then
+      ttl="$WATCH_HEALTH_TTL_SECONDS"
+      [[ "$status" == "fail" ]] && ttl="$WATCH_HEALTH_FAIL_TTL_SECONDS"
+      if (( age < ttl )); then
         printf '%s' "$status"
         return 0
       fi
@@ -143,7 +152,7 @@ check_platform() {
     if [[ "$cached" == "ok" ]]; then
       return 0
     fi
-    echo "[watch] WARNING: yt-dlp probe failed for $domain — recent breakage detected. Continuing anyway; run 'yt-dlp -U' if download fails. tag=platform-probe-fail" >&2
+    echo "[$(basename "$0")] WARNING: yt-dlp probe failed for $domain — recent breakage detected. Continuing anyway; run 'yt-dlp -U' if download fails. tag=platform-probe-fail" >&2
     return 1
   fi
 
@@ -152,11 +161,13 @@ check_platform() {
     return 0
   fi
   _health_cache_write "$domain" fail
-  echo "[watch] WARNING: yt-dlp probe failed for $domain — recent breakage detected. Continuing anyway; run 'yt-dlp -U' if download fails. tag=platform-probe-fail" >&2
+  echo "[$(basename "$0")] WARNING: yt-dlp probe failed for $domain — recent breakage detected. Continuing anyway; run 'yt-dlp -U' if download fails. tag=platform-probe-fail" >&2
   return 1
 }
 
-# Helper for `bin/watch`: derive domain from URL, then probe.
+# Helper for `bin/watch` and `bin/listen`: derive domain from URL, then
+# probe. The warning line's "[name]" prefix reflects whichever of them
+# called it, via $0 — not hardcoded.
 check_platform_for_url() {
   local url="$1"
   local domain
