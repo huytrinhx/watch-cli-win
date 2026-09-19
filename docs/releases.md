@@ -26,18 +26,22 @@ contract: "v1 means the tarball at tag v1.x.y."
 
 ## When the npm step is red
 
-The `Publish @huytrinhx/watch-cli-mcp to npm` job is `continue-on-error`: npm
-granular tokens expire every 90 days and a release should not fail because a
-secret aged out. When it is red, publish by hand from a checkout of the tag:
+The `Publish @huytrinhx/watch-cli-mcp to npm` job is `continue-on-error`: a
+release should not fail on npm's registry being flaky, an OIDC hiccup, or
+the Trusted Publisher config drifting. When it is red, publish by hand from
+a checkout of the tag:
 
 ```bash
 cd mcp-server
+npm login
 npm version --no-git-tag-version X.Y.Z
 npm ci && npm run build
 npm publish --access public
 ```
 
-Then refresh `NPM_TOKEN` in the repository secrets when convenient.
+`npm login` authenticates the publish as you interactively (2FA prompt
+included) — there is no token to refresh, since the workflow publishes via
+Trusted Publishing (OIDC), not a stored `NPM_TOKEN` secret.
 
 ## Semver policy
 
@@ -257,21 +261,35 @@ npm run build
 npm publish --access public
 ```
 
-Requires `NPM_TOKEN` repo secret scoped to publish under `@huytrinhx/`.
-`mcp-server/package.json` must already carry the correct version —
-the version-bump PR includes a bump of `mcp-server/package.json` to
-match.
+Publishes via npm **Trusted Publishing (OIDC)** — no stored token. The
+workflow's `id-token: write` permission lets it mint a short-lived
+credential that npm exchanges for a publish grant, scoped to this exact
+repo + workflow file. `mcp-server/package.json` must already carry the
+correct version — the version-bump PR includes a bump of
+`mcp-server/package.json` to match.
+
+**Bootstrap chicken-and-egg:** npm requires a package to already exist
+before a Trusted Publisher can be configured for it, so the very first
+publish can't use OIDC. Do it once by hand, interactively:
+
+```bash
+cd mcp-server
+npm login             # your account, 2FA prompt included — no token
+npm version --no-git-tag-version --allow-same-version X.Y.Z
+npm ci && npm run build
+npm publish --access public
+```
+
+Then, with the package now existing, go to
+`@huytrinhx/watch-cli-mcp`'s npmjs.com Settings page → Trusted
+Publishers → add GitHub Actions, repo `huytrinhx/watch-cli-win`,
+workflow `release.yml`. Every release after that publishes through
+the workflow with no further manual steps.
 
 ### Required repo secrets
 
-- `NPM_TOKEN` — step 5; publish under `@huytrinhx/` on npm.
-  **Setup (one-time, manual):** generate an Automation token at
-  https://www.npmjs.com/settings/huytrinhx/tokens, then paste into the
-  watch-cli repo at Settings → Secrets and variables → Actions →
-  New repository secret. Without this, the `publish-mcp` job fails
-  and no MCP server is published — the GH Release and tarball are
-  unaffected.
-- `GITHUB_TOKEN` (built-in) is sufficient for steps 1–4.
+- `GITHUB_TOKEN` (built-in) is sufficient for all steps, including the npm
+  publish — Trusted Publishing needs no npm secret at all.
 
 ---
 

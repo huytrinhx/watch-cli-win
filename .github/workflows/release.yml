@@ -5,11 +5,15 @@ name: release
 # and publishes the MCP stdio server to npm. See docs/releases.md for
 # the contract.
 #
+# npm publish uses Trusted Publishing (OIDC) — no NPM_TOKEN secret.
+# One-time setup, after the package's first (manual) publish exists on
+# npm: on @huytrinhx/watch-cli-mcp's npmjs.com Settings page, add a
+# Trusted Publisher for GitHub Actions scoped to repo
+# huytrinhx/watch-cli-win, workflow release.yml. The `id-token: write`
+# permission below is what lets this workflow mint the short-lived
+# OIDC credential npm exchanges for a publish grant.
+#
 # Required repo secrets (Settings → Secrets and variables → Actions):
-#   NPM_TOKEN          — automation token scoped to publish under
-#                        @huytrinhx/ on npm. Used by publish-mcp job.
-#                        TODO(user): generate at npmjs.com/settings/
-#                        huytrinhx/tokens (type: Automation) and paste.
 #   GITHUB_TOKEN       — built-in, sufficient for steps 1–4.
 
 on:
@@ -19,7 +23,7 @@ on:
 
 permissions:
   contents: write   # gh release create
-  id-token: write   # npm provenance (future)
+  id-token: write   # npm Trusted Publishing (OIDC)
 
 jobs:
   release:
@@ -129,11 +133,13 @@ jobs:
     name: Publish @huytrinhx/watch-cli-mcp to npm
     needs: release
     runs-on: ubuntu-latest
-    # npm granular tokens expire every 90 days and the release must not hang
-    # on one. A red step here means "publish by hand": from mcp-server/,
-    # `npm version --no-git-tag-version <tag>`, `npm ci`, `npm run build`,
-    # `npm publish --access public` with a logged-in npm account (v0.3.4 was
-    # published that way on 2026-09-05).
+    # Publishes via npm Trusted Publishing (OIDC) — no NPM_TOKEN secret
+    # involved. This requires the package to already exist on npm and a
+    # trusted publisher configured on its Settings page (repo
+    # huytrinhx/watch-cli-win, workflow release.yml); see docs/releases.md.
+    # A red step here means "publish by hand": from mcp-server/,
+    # `npm login`, `npm version --no-git-tag-version <tag>`, `npm ci`,
+    # `npm run build`, `npm publish --access public`.
     continue-on-error: true
     steps:
       - name: Checkout
@@ -142,8 +148,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing needs npm >= 11.5.1; Node 22's bundled npm may
+      # be older than that.
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Sync mcp-server version to tag
         # npm version --no-git-tag-version is idempotent if the
@@ -161,6 +172,4 @@ jobs:
 
       - name: Publish
         working-directory: mcp-server
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
