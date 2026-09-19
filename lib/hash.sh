@@ -7,8 +7,16 @@
 # sha1sum/sha256sum are always present there instead, so prefer those and
 # fall back to shasum, then to python3, so every supported OS has a path.
 
+# Not exported: this only needs to guard against double-sourcing within
+# the current process. `watch` sources this (via lib/archive.sh) and then
+# shells out to dl-video/extract-frames/transcribe/audio-q as *child*
+# processes, each of which sources this file again to get its own copy of
+# watch_hash_sha1_stdin. An exported guard would leak into those children
+# via inherited environment, short-circuit their `source`, and leave the
+# function undefined there (functions don't survive exec/fork the way
+# exported variables do) — "watch_hash_sha1_stdin: command not found".
 [[ -n "${WATCH_CLI_HASH_LOADED:-}" ]] && return 0
-export WATCH_CLI_HASH_LOADED=1
+WATCH_CLI_HASH_LOADED=1
 
 # Reads stdin, prints its SHA-1 hex digest. Used only to derive short,
 # stable cache/id keys (dl-video's mp4 name, extract-frames' /tmp dir,

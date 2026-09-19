@@ -25,8 +25,10 @@
 # network independence — silently routing audio over an API would void
 # that intent.
 
+# Not exported — see lib/hash.sh for why an exported guard breaks a
+# child process that sources this file again to get its own functions.
 [[ -n "${WATCH_CLI_AUDIO_ROUTING_LOADED:-}" ]] && return 0
-export WATCH_CLI_AUDIO_ROUTING_LOADED=1
+WATCH_CLI_AUDIO_ROUTING_LOADED=1
 
 # Pull in env defaults (KYMA_API_KEY, GROQ_API_KEY) without redefining.
 # env.sh is idempotent so double-source is safe.

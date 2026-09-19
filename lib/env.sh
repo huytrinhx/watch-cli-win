@@ -27,9 +27,11 @@ if [[ -z "${_WATCH_AUDIO_MODE_RAW_CAPTURED:-}" ]]; then
   export _WATCH_AUDIO_MODE_RAW_CAPTURED=1
 fi
 
-# Idempotent: only load once per shell.
+# Idempotent: only load once per shell. Not exported — see lib/hash.sh
+# for why an exported guard breaks a child process that sources this
+# file again to get its own function definitions.
 [[ -n "${WATCH_CLI_ENV_LOADED:-}" ]] && return 0
-export WATCH_CLI_ENV_LOADED=1
+WATCH_CLI_ENV_LOADED=1
 
 # Version lives in lib/version.sh (single source of truth — see that file
 # and docs/releases.md). The User-Agent below uses WATCH_CLI_VERSION so

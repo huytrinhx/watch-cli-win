@@ -11,8 +11,10 @@
 # Cached `fail` re-emits the warning so the user sees it on every
 # attempt within the window.
 
+# Not exported — see lib/hash.sh for why an exported guard breaks a
+# child process that sources this file again to get its own functions.
 [[ -n "${WATCH_CLI_HEALTH_LOADED:-}" ]] && return 0
-export WATCH_CLI_HEALTH_LOADED=1
+WATCH_CLI_HEALTH_LOADED=1
 
 WATCH_HEALTH_CACHE_DIR="${WATCH_HEALTH_CACHE_DIR:-/tmp/watch-cli-health}"
 WATCH_HEALTH_TTL_SECONDS="${WATCH_HEALTH_TTL_SECONDS:-86400}"  # 24h.

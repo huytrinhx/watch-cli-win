@@ -25,9 +25,11 @@
 # <id> is sha1(source)[:12] — the same key bin/dl-video uses for its own
 # cache, so the two stay aligned instead of drifting apart.
 
-# Guard against double-sourcing.
+# Guard against double-sourcing. Not exported — see lib/hash.sh for why
+# an exported guard breaks a child process that sources this file again
+# to get its own functions.
 [[ -n "${WATCH_ARCHIVE_LOADED:-}" ]] && return 0
-export WATCH_ARCHIVE_LOADED=1
+WATCH_ARCHIVE_LOADED=1
 
 # shellcheck source=./hash.sh
 source "$(dirname "${BASH_SOURCE[0]}")/hash.sh"

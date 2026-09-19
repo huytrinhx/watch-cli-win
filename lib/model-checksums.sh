@@ -16,9 +16,11 @@
 # whisper.cpp models page; watch-cli pins SHA256 to match the rest of
 # the toolchain.
 #
-# Idempotent: only load once per shell.
+# Idempotent: only load once per shell. Not exported — see lib/hash.sh
+# for why an exported guard breaks a child process that sources this
+# file again to get its own variables.
 [[ -n "${WATCH_CLI_MODEL_CHECKSUMS_LOADED:-}" ]] && return 0
-export WATCH_CLI_MODEL_CHECKSUMS_LOADED=1
+WATCH_CLI_MODEL_CHECKSUMS_LOADED=1
 
 # https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin
 # Size: 1624555275 bytes (≈ 1.62 GB)
