@@ -145,11 +145,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # No registry-url here on purpose: actions/setup-node writes an
+      # `_authToken=${NODE_AUTH_TOKEN}` line into .npmrc whenever
+      # registry-url is set, and with no NODE_AUTH_TOKEN (intentional,
+      # for OIDC) that expands to empty. npm then sees "auth configured"
+      # and skips the OIDC exchange entirely, failing ENEEDAUTH instead
+      # of publishing via Trusted Publishing. npmjs.org is npm's default
+      # registry anyway, so omitting this changes nothing else.
+      # See actions/setup-node#1551 and npm/documentation#1960.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
 
       # Trusted Publishing needs npm >= 11.5.1; Node 22's bundled npm may
       # be older than that.
