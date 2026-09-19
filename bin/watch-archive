@@ -6,10 +6,14 @@
 #   get <id|url>          reprint one record
 #   where                 print the archive root
 #
-# Reads the records bin/watch leaves behind (see docs/archive.md). Kept as a
-# separate binary rather than subcommands on `watch`, so `watch`'s argument
-# parsing — which already juggles --pipe, --format and a positional
-# frame-count — stays untouched.
+# Reads the records bin/watch and bin/listen leave behind (see
+# docs/archive.md). A record whose transcribe step hasn't succeeded yet
+# (still running, or failed and awaiting retry) shows up tagged
+# `[partial]` in `ls` and with a `STATUS: partial` line in `get` — see
+# docs/archive.md "Partial records" for what that means and how to
+# resume. Kept as a separate binary rather than subcommands on `watch`,
+# so `watch`'s argument parsing — which already juggles --pipe, --format
+# and a positional frame-count — stays untouched.
 #
 # Nothing here is required to read the archive: it is plain JSON and SRT on
 # disk, so `grep` and `jq` work just as well. This is a convenience, not a
@@ -37,7 +41,7 @@ source "$ROOT_DIR/lib/archive.sh"
 INDEX="$WATCH_ARCHIVE_DIR/index.jsonl"
 
 usage() {
-  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 if ! command -v python3 >/dev/null 2>&1; then
@@ -78,8 +82,12 @@ for r in ordered[: int(sys.argv[2])]:
     d = int(r.get("duration") or 0)
     seg = r.get("segments") or 0
     label = r.get("title") or r.get("source") or ""
+    # Older records predate the status field — they were only ever
+    # written on full success, so "complete" is the correct default.
+    status = r.get("status", "complete")
+    tag = "[partial] " if status == "partial" else ""
     print(f"{r.get('id','')}  {d//60:>3}m{d%60:02d}  {seg:>4} seg  "
-          f"{(r.get('watched_at') or '')[:10]}  {label[:64]}")
+          f"{(r.get('watched_at') or '')[:10]}  {tag}{label[:64]}")
 PY
 }
 
@@ -157,6 +165,7 @@ if m.get("uploader"):
     print(f"UPLOADER: {m['uploader']}")
 print(f"DURATION: {int(m.get('duration') or 0)}")
 print(f"WATCHED: {m.get('watched_at','')}")
+print(f"STATUS: {m.get('status', 'complete')}")
 print(f"RECORD: {m.get('dir','')}")
 print("FRAMES:")
 for f in m.get("frames") or []:
@@ -170,6 +179,10 @@ elif tr.get("text"):
     print("  (no segment timing from the backend that produced this record)")
     for line in tr["text"].splitlines():
         print(f"  {line}")
+elif m.get("status") == "partial":
+    print("  (partial record — downloaded, not yet transcribed. Re-run the")
+    print("  same watch/listen command: the download is cached, so it picks")
+    print("  up from the transcribe step instead of starting over.)")
 else:
     print("  (none)")
 PY

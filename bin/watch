@@ -170,9 +170,12 @@ process_url() {
   # ── Archive lookup ──
   # A record only counts when its transcript is non-empty (see
   # lib/archive.sh), so a previously failed transcribe never masks a retry.
-  # Frames are archived alongside the record and therefore outlive /tmp; the
-  # mp4 is not, so if it has been cleared we still re-download — VIDEO: must
-  # name a file that exists — but the ASR call is skipped either way.
+  # Frames are archived alongside the record, and dl-video's own cache is
+  # persistent too (~/.watch-cli/downloads, not /tmp) — but the video_path
+  # is still just a path reference, not a copy, so if it's ever gone
+  # (manual cleanup, moved disk, …) re-download here as a fallback.
+  # VIDEO: must name a file that exists — the ASR call is skipped either
+  # way since the transcript is already in the record.
   if [[ $NO_CACHE -eq 0 ]] && watch_archive_has "$url"; then
     video="$(watch_archive_field "$url" video_path)"
     dur_int="$(watch_archive_field "$url" duration)"
@@ -235,6 +238,24 @@ process_url() {
     dur_int="${dur%.*}"
     [[ -z "$dur_int" ]] && dur_int=0
 
+    local info_json
+    info_json="${video%.mp4}.info.json"
+    [[ -f "$info_json" ]] || info_json=""
+
+    # Write a partial record now, before frames/transcribe even start —
+    # the expensive, re-download-avoiding part (the video itself) is
+    # already safe on disk at this point. watch_archive_put overwrites
+    # the whole record each call, so this is just an early draft the
+    # final call below replaces; watch_archive_has still correctly
+    # reports "no usable record" for it (empty transcript), so it can
+    # never be mistaken for a completed answer. If extract-frames or
+    # transcribe then fails or the process gets killed, `watch-archive
+    # get <url>` shows title/duration/video_path instead of nothing, and
+    # a retry's download step hits dl-video's own persistent cache
+    # instantly instead of re-fetching.
+    watch_archive_put "$url" "$video" "$dur_int" "" "" "$info_json" \
+      || echo "[watch] warning: could not write partial archive record" >&2
+
     echo "[watch] extracting $count frames …" >&2
     # Cut frames straight into the archive record rather than /tmp, then copy.
     # One location means a cache hit emits the same paths a cold run did, and
@@ -261,10 +282,8 @@ process_url() {
 
     # Store only on success. An empty transcript is not an answer worth
     # remembering — the next run should get a real attempt, not this one.
+    # (info_json was already resolved above, for the partial write.)
     if [[ $tr_rc -eq 0 && -n "$transcript" ]]; then
-      local info_json
-      info_json="${video%.mp4}.info.json"
-      [[ -f "$info_json" ]] || info_json=""
       watch_archive_put "$url" "$video" "$dur_int" \
         "$rec_frames/frames.json" "$seg_file" "$info_json" \
         || echo "[watch] warning: could not write archive record" >&2

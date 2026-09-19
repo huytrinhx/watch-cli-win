@@ -38,7 +38,7 @@ set like any other watch-cli setting.
 ~/.watch-cli/archive/
   index.jsonl                    one JSON object per record, newest last
   <id>/
-    meta.json                    source, title, duration, frames, segments
+    meta.json                    source, title, duration, frames, segments, status
     transcript.txt               flat text
     transcript.srt               timestamped; opens in any video player
     frames/frame_01.jpg …        the extracted frames
@@ -52,10 +52,43 @@ Frames are cut directly into the record rather than into `/tmp` and copied.
 That means they survive `/tmp` being cleared, and a cache hit reports the
 same paths the cold run did.
 
-The mp4 is deliberately *not* archived. It is the large, re-downloadable
-part; a short video's record is a few hundred kilobytes. If `/tmp` has been
-cleared and the mp4 is gone, a cache hit re-downloads it — the `VIDEO:` line
-must name a file that exists — but still skips the ASR call.
+The mp4 is deliberately *not* copied into the record — it is the large
+part; a short video's record is a few hundred kilobytes without it. It's
+still not thrown away, though: `bin/dl-video` caches it under its own
+persistent `~/.watch-cli/downloads/<hash>.{mp4,audio.mp3}` (not `/tmp` —
+that used to be the case and meant every WSL restart silently discarded
+any in-progress download), keyed by the same `sha1(source)[:12]` hash as
+the archive record, so the two stay aligned without needing to reference
+each other. If the video file is ever gone regardless (manual cleanup, a
+moved disk, …), a cache hit re-downloads it — the `VIDEO:` line must name
+a file that exists — but still skips the ASR call, since the transcript
+is already in the record.
+
+---
+
+## Partial records (resuming after a failure)
+
+`watch`/`listen` write a record in two passes, not one:
+
+1. Right after the download succeeds — `meta.json` gets `video_path`
+   (or nothing, for `listen`), `title`, `duration`, and an empty
+   transcript. `"status": "partial"`.
+2. Right after transcribe succeeds — the same record is rewritten with
+   the real transcript (and, for `watch`, the frame list).
+   `"status": "complete"`.
+
+If frame extraction or transcribe then fails, crashes, or the process
+gets killed, pass 1's record is what's left behind — visible via
+`watch-archive ls` (tagged `[partial]`) and `watch-archive get` (which
+explains what happened and what to do), instead of nothing at all.
+`watch_archive_has` still correctly reports "no usable record" for a
+partial one (its transcript is empty), so it's never mistaken for a
+completed answer and a retry always makes a real transcribe attempt —
+it just skips re-downloading, since the video/audio file is already
+sitting in `bin/dl-video`'s persistent cache from pass 1.
+
+Re-running the exact same `watch`/`listen` command is the correct way to
+resume — there is no separate `--resume` flag, because none is needed.
 
 ---
 

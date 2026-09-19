@@ -4,6 +4,11 @@
 # LinkedIn, TikTok, Reddit, Vimeo, Facebook, …) into a local mp4 and
 # prints the absolute path on stdout. Stderr carries progress.
 #
+# Cached under ~/.watch-cli/downloads/<hash>.{mp4,audio.mp3} by default
+# (override with [out-dir]) — persistent, not /tmp, so a slow download
+# survives a WSL restart or a later step failing and doesn't need
+# re-fetching on retry. Same idempotent-by-URL-hash cache either way.
+#
 # --audio-only skips the video stream entirely (yt-dlp -f bestaudio,
 # extracted to mp3) instead of downloading+merging video too — for a
 # transcript-only workflow (see bin/listen) where the video bytes would
@@ -41,8 +46,15 @@ source "$ROOT_DIR/lib/dotenv.sh"
 source "$ROOT_DIR/lib/shell-safety.sh"
 watch_cli_warn_if_backgrounded
 
+# Persistent, not /tmp: a downloaded video/audio file used to live in
+# /tmp/dl-video and vanish on every reboot (WSL2 wipes /tmp on restart).
+# That meant a transcribe/upload failure after a slow download threw the
+# download away too, forcing a full re-fetch on retry even though the
+# expensive network part had already succeeded. ~/.watch-cli/downloads
+# survives restarts, same as the archive.
 URL=""
-OUTDIR="/tmp/dl-video"
+OUTDIR="$HOME/.watch-cli/downloads"
+OUTDIR_SET=0
 COOKIES_FILE=""
 AUDIO_ONLY=0
 
@@ -61,7 +73,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h|--help)
-      sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -V|--version)
@@ -71,8 +83,9 @@ while [[ $# -gt 0 ]]; do
     *)
       if [[ -z "$URL" ]]; then
         URL="$1"
-      elif [[ "$OUTDIR" == "/tmp/dl-video" ]]; then
+      elif (( ! OUTDIR_SET )); then
         OUTDIR="$1"
+        OUTDIR_SET=1
       fi
       shift
       ;;

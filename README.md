@@ -24,7 +24,7 @@ Works on YouTube, X, LinkedIn, TikTok, Reddit, Vimeo, and Facebook. Login-walled
 ```text
 $ watch "https://www.linkedin.com/posts/some-talk_activity-12345"
 
-VIDEO: /tmp/dl-video/abc123.mp4
+VIDEO: /home/you/.watch-cli/downloads/abc123.mp4
 DURATION: 218
 FRAMES:
   /tmp/frames_abc123/frame_01.jpg

@@ -149,6 +149,19 @@ if [[ $FROM_CACHE -eq 0 ]]; then
   DUR_INT="${DUR%.*}"
   [[ -z "$DUR_INT" ]] && DUR_INT=0
 
+  INFO_JSON="${AUDIO%.*}.info.json"
+  [[ -f "$INFO_JSON" ]] || INFO_JSON=""
+
+  # Partial record, before transcribe even starts — see bin/watch for
+  # the same pattern and why. watch_archive_has still correctly reports
+  # "no usable record" for this (empty transcript), so a retry always
+  # attempts a real transcribe; it just skips re-downloading, since
+  # dl-video's own cache (now persistent — see bin/dl-video) already
+  # has the audio either way. `video` stays "" here too, matching the
+  # final write below: listen never records a video_path.
+  watch_archive_put "$URL" "" "$DUR_INT" "" "" "$INFO_JSON" \
+    || echo "[listen] warning: could not write partial archive record" >&2
+
   echo "[listen] transcribing audio …" >&2
   SEG_FILE="$(mktemp)"
   if [[ -n "$LANGUAGE" ]]; then
@@ -161,9 +174,8 @@ if [[ $FROM_CACHE -eq 0 ]]; then
   # Store only on success — an empty transcript is not an answer worth
   # remembering. No video_path, no frames: watch_archive_put stores both
   # as null/empty when passed "", which lib/archive.sh already handles.
+  # (INFO_JSON was already resolved above, for the partial write.)
   if [[ $TR_RC -eq 0 && -n "$TRANSCRIPT" ]]; then
-    INFO_JSON="${AUDIO%.*}.info.json"
-    [[ -f "$INFO_JSON" ]] || INFO_JSON=""
     watch_archive_put "$URL" "" "$DUR_INT" "" "$SEG_FILE" "$INFO_JSON" \
       || echo "[listen] warning: could not write archive record" >&2
   fi

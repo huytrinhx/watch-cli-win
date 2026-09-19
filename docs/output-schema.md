@@ -171,7 +171,7 @@ frames.
 ```text
 $ watch "https://www.youtube.com/watch?v=abc123"
 WATCH_OUTPUT_VERSION: 1
-VIDEO: /tmp/dl-video/abc123.mp4
+VIDEO: /home/you/.watch-cli/downloads/abc123.mp4
 DURATION: 218
 FRAMES:
   /tmp/frames_abc123/frame_01.jpg
@@ -194,7 +194,7 @@ Stderr during the same run (informational, not part of the contract):
 
 ```text
 [watch] downloading https://www.youtube.com/watch?v=abc123 …
-[watch] video: /tmp/dl-video/abc123.mp4
+[watch] video: /home/you/.watch-cli/downloads/abc123.mp4
 [watch] extracting 8 frames …
 [watch] transcribing audio …
 ```
@@ -211,7 +211,7 @@ actual output is one line):
 ```json
 {
   "version": 1,
-  "video_path": "/tmp/dl-video/abc123.mp4",
+  "video_path": "/home/you/.watch-cli/downloads/abc123.mp4",
   "duration_sec": 218,
   "frame_paths": [
     "/tmp/frames_abc123/frame_01.jpg",

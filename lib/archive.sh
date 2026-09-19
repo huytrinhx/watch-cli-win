@@ -172,6 +172,12 @@ meta = {
     "watched_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
     "frames": archived,
     "transcript": tr,
+    # "complete" once a real transcript has landed; "partial" for the
+    # early write watch/listen make right after downloading, before
+    # transcribe even starts (see bin/watch, bin/listen). Inferred from
+    # the transcript rather than an explicit argument, so this needed no
+    # signature change and every existing caller gets it automatically.
+    "status": "complete" if (tr.get("text") or "").strip() else "partial",
 }
 
 with open(os.path.join(rec, "meta.json"), "w", encoding="utf-8") as fh:
@@ -211,6 +217,7 @@ with open(index_path, "a", encoding="utf-8") as fh:
         "watched_at": meta["watched_at"],
         "dir": rec,
         "has_transcript": bool((tr.get("text") or "").strip()),
+        "status": meta["status"],
         "segments": len(segs),
     }, ensure_ascii=False) + "\n")
 PY
