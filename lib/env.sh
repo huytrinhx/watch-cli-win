@@ -40,26 +40,8 @@ WATCH_CLI_ENV_LOADED=1
 source "$(dirname "${BASH_SOURCE[0]}")/version.sh"
 export WATCH_CLI_USER_AGENT="watch-cli/${WATCH_CLI_VERSION}"
 
-_load_dotenv() {
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  while IFS='=' read -r key value; do
-    [[ -z "$key" || "$key" == \#* ]] && continue
-    [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || continue
-    # Don't override values already in the env.
-    if [[ -z "${!key:-}" ]]; then
-      # Strip surrounding quotes if any.
-      value="${value%\"}"
-      value="${value#\"}"
-      value="${value%\'}"
-      value="${value#\'}"
-      export "$key=$value"
-    fi
-  done < "$file"
-}
-
-_load_dotenv "./.env"
-_load_dotenv "$HOME/.config/watch-cli/env"
+# shellcheck source=dotenv.sh
+source "$(dirname "${BASH_SOURCE[0]}")/dotenv.sh"
 
 # Determine routing mode.
 if [[ -n "${KYMA_API_KEY:-}" ]]; then

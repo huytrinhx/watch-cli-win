@@ -372,6 +372,12 @@ WATCH_BROWSER=auto watch <url>      # any signed-in browser: Chrome → Firefox 
 WATCH_BROWSER=firefox watch <url>   # one browser
 ```
 
+To make the choice stick across every run instead of retyping it, set
+`WATCH_BROWSER=firefox` in `~/.config/watch-cli/env` — the same file
+`KYMA_API_KEY` lives in (see [Setup](#setup)). An inline
+`WATCH_BROWSER=... watch <url>` still overrides the config file for a
+one-off run.
+
 Cookies are read from the local browser profile by yt-dlp, sent only to
 that platform, and never stored or uploaded.
 

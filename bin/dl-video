@@ -30,6 +30,8 @@ ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 source "$ROOT_DIR/lib/version.sh"
 # shellcheck source=../lib/hash.sh
 source "$ROOT_DIR/lib/hash.sh"
+# shellcheck source=../lib/dotenv.sh
+source "$ROOT_DIR/lib/dotenv.sh"
 # shellcheck source=../lib/shell-safety.sh
 source "$ROOT_DIR/lib/shell-safety.sh"
 watch_cli_warn_if_backgrounded
@@ -232,6 +234,18 @@ for BROWSER in ${BROWSERS[@]+"${BROWSERS[@]}"}; do
 done
 
 # Tier 4: classify the final failure and emit a tag-tagged stderr line.
+#
+# The auth/region/network messages below are diagnosed from the log, but
+# "download-other" has no specific guidance to give — the log itself
+# *is* the diagnosis. Every tag benefits from seeing it, so print it
+# once here rather than claiming it's "above" when it was actually only
+# ever captured into /tmp/dl-video.last.log and never shown.
+LAST_LOG="/tmp/dl-video.last.log"
+if [[ -s "$LAST_LOG" ]]; then
+  echo "[dl-video] yt-dlp output ($LAST_LOG):" >&2
+  sed 's/^/  /' "$LAST_LOG" >&2
+fi
+
 TAG="$(classify_failure)"
 case "$TAG" in
   download-auth)
@@ -304,7 +318,7 @@ ERR
     echo "[dl-video] error: download failed for $URL tag=download-network — transient network failure, wait and retry" >&2
     ;;
   *)
-    echo "[dl-video] error: download failed for $URL tag=download-other — surface yt-dlp stderr above for details" >&2
+    echo "[dl-video] error: download failed for $URL tag=download-other — see yt-dlp output above for details" >&2
     ;;
 esac
 exit 3

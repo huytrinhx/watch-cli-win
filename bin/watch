@@ -63,6 +63,8 @@ source "$ROOT_DIR/lib/version.sh"
 source "$ROOT_DIR/lib/health.sh"
 # shellcheck source=../lib/archive.sh
 source "$ROOT_DIR/lib/archive.sh"
+# shellcheck source=../lib/dotenv.sh
+source "$ROOT_DIR/lib/dotenv.sh"
 # shellcheck source=../lib/shell-safety.sh
 source "$ROOT_DIR/lib/shell-safety.sh"
 watch_cli_warn_if_backgrounded

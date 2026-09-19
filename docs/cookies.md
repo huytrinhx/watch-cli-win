@@ -129,6 +129,9 @@ in Firefox on Windows first, then run:
 WATCH_BROWSER=firefox watch "<url>"
 ```
 
+Or set it once in `~/.config/watch-cli/env` (same file `KYMA_API_KEY`
+lives in) so every future run picks it up without retyping it.
+
 Two paths for everything else:
 
 ### Firefox: pointing at a specific profile yourself
