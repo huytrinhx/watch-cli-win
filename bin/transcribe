@@ -299,7 +299,13 @@ PY
       -F "response_format=$RESPONSE_FORMAT"
     )
     [[ -n "$LANG" ]] && ARGS+=(-F "language=$LANG")
-    HTTP_CODE_FILE="$(mktemp)"
+    # -sS means "silent but still show errors" — but a bare 2>/dev/null
+    # right after throws those errors away anyway, so a connection-level
+    # failure (DNS, TLS, timeout, connection reset — anything that isn't
+    # an HTTP response with a status code) always printed the same
+    # contentless "Kyma request failed" with no way to tell why. Capture
+    # curl's stderr instead and print it on failure.
+    CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
@@ -307,12 +313,16 @@ PY
       -H "Authorization: Bearer $KYMA_API_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       "${ARGS[@]}" \
-      "$WATCH_KYMA_BASE/v1/audio/transcriptions" 2>/dev/null)" || {
-      rm -f "$HTTP_CODE_FILE"
+      "$WATCH_KYMA_BASE/v1/audio/transcriptions" 2>"$CURL_ERR")" || {
       echo "[transcribe] error: Kyma request failed tag=transcribe-other" >&2
+      if [[ -s "$CURL_ERR" ]]; then
+        echo "[transcribe] curl output:" >&2
+        sed 's/^/  /' "$CURL_ERR" >&2
+      fi
+      rm -f "$CURL_ERR"
       exit 4
     }
-    rm -f "$HTTP_CODE_FILE"
+    rm -f "$CURL_ERR"
     # Last 3 chars of $BODY are the HTTP status from curl -w.
     HTTP_CODE="${BODY: -3}"
     TEXT="${BODY:0:${#BODY}-3}"
@@ -347,6 +357,10 @@ PY
       -F "response_format=$RESPONSE_FORMAT"
     )
     [[ -n "$LANG" ]] && ARGS+=(-F "language=$LANG")
+    # See the kyma branch above for why stderr is captured instead of
+    # discarded: -sS re-enables curl's own error text, and a bare
+    # 2>/dev/null was throwing it straight back away.
+    CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
@@ -354,10 +368,16 @@ PY
       -H "Authorization: Bearer $GROQ_API_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       "${ARGS[@]}" \
-      https://api.groq.com/openai/v1/audio/transcriptions 2>/dev/null)" || {
+      https://api.groq.com/openai/v1/audio/transcriptions 2>"$CURL_ERR")" || {
       echo "[transcribe] error: BYOK request failed tag=transcribe-other" >&2
+      if [[ -s "$CURL_ERR" ]]; then
+        echo "[transcribe] curl output:" >&2
+        sed 's/^/  /' "$CURL_ERR" >&2
+      fi
+      rm -f "$CURL_ERR"
       exit 4
     }
+    rm -f "$CURL_ERR"
     HTTP_CODE="${BODY: -3}"
     TEXT="${BODY:0:${#BODY}-3}"
     case "$HTTP_CODE" in

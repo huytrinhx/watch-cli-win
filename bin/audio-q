@@ -126,6 +126,11 @@ case "$WATCH_AUDIO_MODE" in
   kyma)
     # Use the "audio-understand" alias rather than a concrete SKU.
     # Kyma can swap the underlying model without breaking watch-cli.
+    # -sS re-enables curl's own error text on failure, but piping it to
+    # /dev/null right after threw it straight away — a connection-level
+    # failure (DNS, TLS, timeout, reset) showed no diagnostic at all.
+    # Capture it instead so it can be printed.
+    CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
@@ -136,10 +141,16 @@ case "$WATCH_AUDIO_MODE" in
       -F "model=audio-understand" \
       -F "question=$QUESTION" \
       -F "duration_sec=$DUR_SEC" \
-      "$WATCH_KYMA_BASE/v1/audio/understand" 2>/dev/null)" || {
+      "$WATCH_KYMA_BASE/v1/audio/understand" 2>"$CURL_ERR")" || {
       echo "[audio-q] error: Kyma request failed tag=transcribe-other" >&2
+      if [[ -s "$CURL_ERR" ]]; then
+        echo "[audio-q] curl output:" >&2
+        sed 's/^/  /' "$CURL_ERR" >&2
+      fi
+      rm -f "$CURL_ERR"
       exit 4
     }
+    rm -f "$CURL_ERR"
     HTTP_CODE="${BODY: -3}"
     RESP="${BODY:0:${#BODY}-3}"
     case "$HTTP_CODE" in
@@ -159,7 +170,7 @@ case "$WATCH_AUDIO_MODE" in
         echo "[audio-q] error: Kyma timeout (HTTP $HTTP_CODE) tag=transcribe-timeout" >&2
         exit 4 ;;
       *)
-        echo "[audio-q] error: Kyma returned HTTP $HTTP_CODE tag=transcribe-other" >&2
+        echo "[audio-q] error: Kyma returned HTTP $HTTP_CODE: $RESP tag=transcribe-other" >&2
         exit 4 ;;
     esac
     ;;
@@ -179,6 +190,7 @@ case "$WATCH_AUDIO_MODE" in
         generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
       }')"
 
+    CURL_ERR="$(mktemp)"
     BODY="$(curl -sS -X POST \
       -w "%{http_code}" \
       -o /dev/stdout \
@@ -187,10 +199,16 @@ case "$WATCH_AUDIO_MODE" in
       -H "x-goog-api-key: $GOOGLE_AI_KEY" \
       -H "User-Agent: $WATCH_CLI_USER_AGENT" \
       -d "$REQ_BODY" \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent" 2>/dev/null)" || {
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent" 2>"$CURL_ERR")" || {
       echo "[audio-q] error: Gemini request failed tag=transcribe-other" >&2
+      if [[ -s "$CURL_ERR" ]]; then
+        echo "[audio-q] curl output:" >&2
+        sed 's/^/  /' "$CURL_ERR" >&2
+      fi
+      rm -f "$CURL_ERR"
       exit 4
     }
+    rm -f "$CURL_ERR"
     HTTP_CODE="${BODY: -3}"
     RESP="${BODY:0:${#BODY}-3}"
     case "$HTTP_CODE" in
@@ -210,7 +228,7 @@ case "$WATCH_AUDIO_MODE" in
         echo "[audio-q] error: Gemini timeout (HTTP $HTTP_CODE) tag=transcribe-timeout" >&2
         exit 4 ;;
       *)
-        echo "[audio-q] error: Gemini returned HTTP $HTTP_CODE tag=transcribe-other" >&2
+        echo "[audio-q] error: Gemini returned HTTP $HTTP_CODE: $RESP tag=transcribe-other" >&2
         exit 4 ;;
     esac
     ;;
