@@ -106,6 +106,16 @@ run_dl() {
     "$URL" >&2
 }
 
+# WSL2 runs watch-cli as a Linux process, so --cookies-from-browser only
+# ever finds a browser profile inside the WSL filesystem — never the
+# Windows-native Chrome/Edge/Firefox at /mnt/c/Users/<name>/AppData/...
+# the user is actually signed into. WATCH_BROWSER=auto silently finds
+# nothing there instead of erring usefully, so the download-auth message
+# needs a different fix path on this platform. See docs/cookies.md#windows-wsl2.
+_is_wsl() {
+  [[ "$(uname -s)" == "Linux" ]] && grep -qi microsoft /proc/version 2>/dev/null
+}
+
 # Classify yt-dlp's last stderr log into one of the documented tags.
 # Falls through to download-other when nothing matches.
 classify_failure() {
@@ -178,7 +188,30 @@ done
 TAG="$(classify_failure)"
 case "$TAG" in
   download-auth)
-    cat >&2 <<ERR
+    if _is_wsl; then
+      cat >&2 <<ERR
+[dl-video] error: download failed for $URL tag=download-auth — WATCH_BROWSER can't reach your Windows browser under WSL2, see below
+
+Two ways to fix:
+  1. Firefox only: export cookies straight from your Windows Firefox
+     profile without leaving WSL (Chrome/Edge/Brave encrypt cookies with
+     Windows DPAPI, which WSL cannot decrypt — this only works for Firefox):
+       ls "/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/"
+       yt-dlp --cookies-from-browser "firefox:/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>" \\
+              --cookies ~/cookies.txt --skip-download "$URL"
+       watch-cli <url> --cookies ~/cookies.txt
+
+  2. Any browser: export cookies.txt with a browser extension instead,
+     save it somewhere WSL can read (e.g. /mnt/c/Users/<you>/Downloads/),
+     then:
+       watch-cli <url> --cookies /mnt/c/Users/<you>/Downloads/cookies.txt
+     See https://github.com/sonpiaz/watch-cli/blob/main/docs/cookies.md#windows-wsl2
+
+  3. Try a public URL — most YouTube, TikTok, and Reddit videos
+     work without cookies.
+ERR
+    else
+      cat >&2 <<ERR
 [dl-video] error: download failed for $URL tag=download-auth — re-run with WATCH_BROWSER=auto to use a signed-in browser on this machine, or pass --cookies <file>
 
 Three ways to fix:
@@ -194,6 +227,7 @@ Three ways to fix:
   3. Try a public URL — most YouTube, TikTok, and Reddit videos
      work without cookies.
 ERR
+    fi
     ;;
   download-region)
     echo "[dl-video] error: download failed for $URL tag=download-region — video is geo-restricted, try a VPN in the supported region" >&2

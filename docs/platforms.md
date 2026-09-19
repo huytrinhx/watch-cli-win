@@ -38,6 +38,10 @@ Two things that trip people up:
   under `/mnt/*` go through a Windows/Linux translation layer (DrvFs) that
   is slower and can silently drop the executable bit `chmod +x` sets,
   which breaks the installer's symlink step.
+- `WATCH_BROWSER=auto` (login-walled videos) does not see your Windows
+  browser session — WSL2 runs watch-cli as a Linux process. See
+  [docs/cookies.md#windows-wsl2](cookies.md#windows-wsl2) for the two
+  paths that actually work on this platform.
 
 `install.sh` detects a bare Git Bash/MSYS/Cygwin shell (i.e. Windows
 without WSL) and refuses to run, printing the WSL2 setup steps instead of

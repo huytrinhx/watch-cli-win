@@ -38,6 +38,15 @@ Reach for `watch` whenever the user gives you a video URL and wants you to do so
 
 Supported platforms: YouTube, X / Twitter, LinkedIn, TikTok, Vimeo, Reddit, Facebook. Every URL is fetched anonymously. A login-walled URL fails with `tag=download-auth`; watch-cli does not touch browser sessions on its own. If the user wants to use one, they opt in per run with `WATCH_BROWSER=auto` (or a browser name), which lets yt-dlp read cookies from the local browser profile and send them only to that platform; `--cookies <file>` uses an exported cookie file instead. Ask the user before setting either; never set them silently.
 
+### Login-walled videos on Windows (WSL2)
+
+If `watch` fails with `tag=download-auth` and you're running under WSL2 (`grep -qi microsoft /proc/version`), do not suggest `WATCH_BROWSER=auto` or any `WATCH_BROWSER=<browser>` value — WSL2 runs as a Linux process, so it cannot see the user's Windows-native browser session, and the flag will silently find nothing instead of failing with a useful error.
+
+Instead, with the user's explicit consent (never do this silently):
+
+- **If the user is signed into the target platform in Windows Firefox**, offer to export the cookies yourself: locate their profile under `/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/`, run `yt-dlp --cookies-from-browser "firefox:<that path>" --cookies <tmp file> --skip-download <url>` from the WSL shell, then call `watch <url> --cookies <tmp file>`, and delete the temporary cookies file afterward. This works because Firefox doesn't encrypt cookie values with Windows DPAPI the way Chrome/Edge do.
+- **If they use Chrome, Edge, or Brave instead**, this trick cannot work — those browsers encrypt cookies with Windows DPAPI, which a WSL/Linux process cannot decrypt even when pointed at the right profile path. Ask the user to export `cookies.txt` via a browser extension instead (see [docs/cookies.md#windows-wsl2](https://github.com/sonpiaz/watch-cli/blob/main/docs/cookies.md#windows-wsl2)) and pass it with `--cookies <file>`.
+
 ## What you get back
 
 The `watch` output gives you the raw materials to map to five concrete artifacts. Match the user's intent to one of them.

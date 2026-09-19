@@ -105,6 +105,57 @@ the extensions above.
 
 ---
 
+## Windows (WSL2)
+
+`watch-cli` on Windows runs inside WSL2 (see
+[docs/platforms.md#windows](platforms.md#windows)), which changes both
+options above:
+
+**`WATCH_BROWSER=auto` (and `WATCH_BROWSER=chrome`/`edge`/`firefox`) does
+not see your Windows browser.** WSL2 runs watch-cli as a Linux process, so
+`yt-dlp --cookies-from-browser` only looks for a browser profile inside
+the WSL filesystem — not the Windows-native Chrome/Edge/Firefox at
+`/mnt/c/Users/<you>/AppData/...` you're actually signed into. Unless
+you've separately installed and signed into a browser inside WSL itself,
+Option 1 silently finds nothing rather than failing with a useful error.
+
+Two paths that actually work on this platform:
+
+### Firefox: export directly from your Windows profile, no extension
+
+Firefox doesn't encrypt cookie values the way Chrome/Edge/Brave do — those
+use Windows DPAPI, which a Linux/WSL process cannot call, so this trick is
+Firefox-only. Point yt-dlp at your Windows-side Firefox profile from
+inside WSL:
+
+```bash
+# Find your profile folder name:
+ls "/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/"
+
+yt-dlp --cookies-from-browser "firefox:/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>.default-release" \
+       --cookies ~/cookies.txt --skip-download "https://www.linkedin.com"
+
+watch <url> --cookies ~/cookies.txt
+```
+
+Close Firefox first if the export fails — an open browser can hold a lock
+on the profile's `cookies.sqlite`.
+
+### Chrome / Edge / Brave: use the extension export (Option 2)
+
+These browsers encrypt cookies with Windows DPAPI, so there's no way for
+a WSL process to decrypt them — even pointed at the right profile path.
+Use the browser-extension export from Option 2 above (it runs inside the
+browser itself, so decryption isn't a problem), save the file somewhere
+WSL can read it (`\\wsl$\Ubuntu\home\<you>\`, or
+`/mnt/c/Users/<you>/Downloads/cookies.txt`), then:
+
+```bash
+watch <url> --cookies /mnt/c/Users/<you>/Downloads/cookies.txt
+```
+
+---
+
 ## Privacy
 
 watch-cli never copies, uploads, or persists your cookies. The cookie
