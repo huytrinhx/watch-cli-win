@@ -89,10 +89,20 @@ if [[ -s "$OUT" ]]; then
   exit 0
 fi
 
-# ≤720p single-file format keeps downloads quick and avoids the bv*+ba
-# merge path which fails on hosts (LinkedIn, FB) that only expose one
-# muxed file. /best fallback covers everything else.
-FORMAT='best[height<=720]/best'
+# Modern YouTube rarely offers a single-file (progressive) format above
+# ~360p any more — video and audio are separate streams that need
+# merging. A progressive-only selector increasingly resolves to nothing
+# at all ("Requested format is not available") once that lone low-res
+# fallback is unavailable for a given client/PO-token state. ffmpeg is
+# already a hard dependency (checked in bin/watch's dep list), so prefer
+# the merge and only fall back to a single muxed file — which is still
+# what LinkedIn/Facebook expose, and what to use when ffmpeg is missing
+# (dl-video, unlike watch, doesn't require ffmpeg to run standalone).
+if command -v ffmpeg >/dev/null 2>&1; then
+  FORMAT='bestvideo[height<=720]+bestaudio/best[height<=720]/best'
+else
+  FORMAT='best[height<=720]/best'
+fi
 
 # --write-info-json drops a <hash>.info.json sidecar (title, uploader,
 # duration) next to the mp4. It rides along with the download already in
