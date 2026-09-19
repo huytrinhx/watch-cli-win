@@ -12,43 +12,7 @@ watch https://twitter.com/anyone/status/12345
 
 Works on YouTube, X, LinkedIn, TikTok, Reddit, Vimeo, and Facebook. Login-walled posts (LinkedIn, private X, FB) work with `WATCH_BROWSER=auto`, which reads cookies from a browser you are signed in to.
 
-## What you can build
-
-Hand the `watch` output to your agent with one of five prompts in [`prompts/`](prompts/):
-
-| Drop in a video of… | Get back |
-|---|---|
-| A coding walkthrough | [Working project files](prompts/implement-from-video.md) |
-| A system architecture talk | [Interactive architecture diagram](prompts/extract-architecture.md) |
-| A UI / motion demo | [Working React component](prompts/clone-ux.md) |
-| A paper or research talk | [Runnable notebook](prompts/paper-to-code.md) |
-| A long tutorial | [Step-by-step cheat sheet](prompts/tutorial-walkthrough.md) |
-
-The prompt library is what turns *"video → frames + transcript"* into *"video → working artifact"*. The full [Prompt library](#prompt-library) section below has copy-paste templates.
-
----
-
-## Why this exists
-
-Large language models can't watch video natively — they read text and
-look at still images. You can hand a video to a multimodal API and get
-back a chat-style summary, but for an agent workflow that's the wrong
-artifact: the agent wants the raw frames and the full transcript so it
-can reason for itself, not someone else's pre-digested recap.
-
-A video is just frames + audio, and each piece already has a fast,
-near-free primitive:
-
-- `yt-dlp` downloads from any social platform
-- `ffmpeg` extracts evenly-spaced frames
-- An ASR model transcribes the audio
-- A multimodal LLM hears tone, music, SFX, language, mood
-
-Compose them and your agent has the materials to watch any social video.
-
----
-
-## What it looks like
+**What it looks like:**
 
 ```text
 $ watch https://www.linkedin.com/posts/some-talk_activity-12345
@@ -68,25 +32,25 @@ Your agent reads the JPGs and the transcript. That's the whole watch.
 
 ---
 
-## Why pay-per-use, not subscription
+## Table of contents
 
-Most subscription summary tools start around **$15/month** and deliver a
-polished, human-readable summary. If you're feeding an AI agent, that's the
-wrong artifact — agents need raw frames and the full transcript to reason
-for themselves, not someone else's pre-digested recap.
+**Get started**
+- [Install](#install)
+- [Setup](#setup)
+- [What you can build](#what-you-can-build)
+- [Commands](#commands)
+- [Login-walled videos](#login-walled-videos)
+- [Use with Claude Code (or any agent)](#use-with-claude-code-or-any-agent)
 
-A typical research session is 1–3 videos, not 100. Through Kyma — the default
-backend — a 1-hour video costs **~$0.05** (transcribe is the only paid step;
-frame extraction is local ffmpeg).
-
-| This month you watch | You pay |
-|---|---|
-| 0 videos | $0 |
-| 1 one-hour video | ~$0.05 |
-| 100 one-hour videos | ~$5 |
-
-No monthly minimum, no seat license, no lock-in. The free credit at Kyma
-signup is enough to run the full pipeline end-to-end before you spend a cent.
+**More** — background, internals, and reference
+- [Why this exists](#why-this-exists)
+- [How it works](#how-it-works)
+- [Why Kyma](#why-kyma)
+- [Pricing](#pricing)
+- [Limitations](#limitations)
+- [Prompt library details](#prompt-library-details)
+- [Show what you build](#show-what-you-build)
+- [License](#license)
 
 ---
 
@@ -99,31 +63,6 @@ curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/i
 > The curl one-liner auto-falls back to `git clone` of `main` if no
 > published release tarball is reachable.
 
-### Claude Code (skill marketplace)
-
-If you use Claude Code, install watch-cli as a skill:
-
-```
-/plugin marketplace add huytrinhx/watch-cli-win
-/plugin install watch-cli@watch-cli
-```
-
-The agent then picks up `watch <url>` as a first-class command.
-
-Pin a specific version:
-
-```bash
-curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
-  | WATCH_CLI_VERSION=0.3.4 bash
-```
-
-Or from a clone:
-
-```bash
-git clone https://github.com/huytrinhx/watch-cli-win ~/.watch-cli
-cd ~/.watch-cli && ./install.sh
-```
-
 The installer checks for `yt-dlp`, `ffmpeg`, `jq`, `curl`, `python3` and
 symlinks the commands into `~/.local/bin`.
 
@@ -133,10 +72,7 @@ On Debian/Ubuntu:
 sudo apt install yt-dlp ffmpeg jq python3 curl
 ```
 
-### Windows (via WSL2)
-
-watch-cli is a Bash CLI — on Windows it runs inside **WSL2**, not directly
-in PowerShell or cmd.exe:
+**Windows** runs watch-cli inside **WSL2**, not directly in PowerShell or cmd.exe:
 
 ```powershell
 wsl --install          # from an elevated PowerShell, then reboot if prompted
@@ -154,7 +90,33 @@ Always run `watch <url>` from that Ubuntu/WSL terminal, not from
 PowerShell or cmd.exe — those shells can't execute Bash scripts. See
 [docs/platforms.md](docs/platforms.md#windows) for details and gotchas.
 
-### Optional install flags
+<details>
+<summary><strong>More install options</strong> — Claude Code skill, pinned version, from a clone, optional flags</summary>
+
+**Claude Code (skill marketplace):**
+
+```
+/plugin marketplace add huytrinhx/watch-cli-win
+/plugin install watch-cli@watch-cli
+```
+
+The agent then picks up `watch <url>` as a first-class command.
+
+**Pin a specific version:**
+
+```bash
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
+  | WATCH_CLI_VERSION=0.3.4 bash
+```
+
+**From a clone:**
+
+```bash
+git clone https://github.com/huytrinhx/watch-cli-win ~/.watch-cli
+cd ~/.watch-cli && ./install.sh
+```
+
+**Optional install flags:**
 
 ```bash
 ./install.sh --with-skill   # also drop SKILL.md into ~/.claude/skills/watch-cli/
@@ -166,8 +128,9 @@ PowerShell or cmd.exe — those shells can't execute Bash scripts. See
   works in OpenClaw and hermes-agent — see [`SKILL.md`](SKILL.md).
 - `--with-mcp` prints the manual install line for [`@huytrinhx/watch-cli-mcp`](mcp-server/),
   the MCP stdio server that exposes watch-cli to Claude Desktop, Cursor, Cline,
-  Continue.dev, Windsurf, Zed, and any other MCP-capable client. The flag will
-  auto-install once the package is published to npm.
+  Continue.dev, Windsurf, Zed, and any other MCP-capable client.
+
+</details>
 
 ---
 
@@ -184,6 +147,9 @@ in `.env.example` and watch-cli falls back to direct provider calls.
 
 Runs on [Kyma API](https://kymaapi.com?utm_source=watch-cli): one key covers speech-to-text and audio scene Q&A for every `watch` / `transcribe` / `audio-q` run.
 
+<details>
+<summary>Which models are behind each call</summary>
+
 Default Kyma calls (scripts send capability aliases; Kyma resolves them to the models below):
 
 | Role | Model | Kyma endpoint | Best for |
@@ -191,29 +157,23 @@ Default Kyma calls (scripts send capability aliases; Kyma resolves them to the m
 | Transcribe (alias `transcribe`) | [`whisper-v3-turbo`](https://kymaapi.com/models/whisper-v3-turbo?utm_source=watch-cli) | `POST https://kymaapi.com/v1/audio/transcriptions` | Speech-to-text for any social video |
 | Audio Q&A (alias `audio-understand`) | [`gemini-3-flash-audio`](https://kymaapi.com/models/gemini-3-flash-audio?utm_source=watch-cli) | `POST https://kymaapi.com/v1/audio/understand` | Tone, music, SFX, language, emotion |
 
+</details>
+
 ---
 
-## Why Kyma
+## What you can build
 
-watch-cli uses Kyma as its AI backend. A few things you get for free:
+Hand the `watch` output to your agent with one of five prompts in [`prompts/`](prompts/):
 
-![models](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/models.json)
-![creators](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/creators.json)
-![free credit](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/free-credit.json)
+| Drop in a video of… | Get back |
+|---|---|
+| A coding walkthrough | [Working project files](prompts/implement-from-video.md) |
+| A system architecture talk | [Interactive architecture diagram](prompts/extract-architecture.md) |
+| A UI / motion demo | [Working React component](prompts/clone-ux.md) |
+| A paper or research talk | [Runnable notebook](prompts/paper-to-code.md) |
+| A long tutorial | [Step-by-step cheat sheet](prompts/tutorial-walkthrough.md) |
 
-- **One key, every model in this CLI.** watch-cli calls Kyma using
-  capability aliases (`transcribe`, `audio-understand`). When Kyma swaps
-  in a better model behind the alias, your scripts keep working unchanged.
-- **Per-call cost in the response.** Every transcribe gives you a real
-  number, not an end-of-month dashboard surprise.
-- **Auto-fallback across providers.** If the underlying audio provider is
-  throttling or down, Kyma routes through another. Your script never sees
-  the outage.
-- **Free credit at signup.** About 9 hours of audio at the default rate.
-  Enough to know if you like it before you spend a cent.
-
-The badges above pull live from `api.kymaapi.com/api/stats`, so the model
-count and free-credit number stay current without a watch-cli release.
+Paste the chosen prompt above the `watch` output, hand the whole thing to your agent. Setup details for using this as a Claude Code skill are in [Prompt library details](#prompt-library-details) below.
 
 ---
 
@@ -247,11 +207,7 @@ models [--all]
   --all to see every Kyma SKU (text + image + video + audio).
 ```
 
-### Watch once, keep it
-
-Every successful run is archived to `~/.watch-cli/archive`, so the same
-video is never transcribed twice. A second `watch` on the same URL skips
-both the download and the ASR call and prints byte-identical output.
+**Watch once, keep it** — every successful run is archived to `~/.watch-cli/archive`, so the same video is never transcribed twice. A second `watch` on the same URL skips both the download and the ASR call and prints byte-identical output.
 
 ```bash
 watch https://youtu.be/xyz          # first run: downloads, transcribes
@@ -262,14 +218,6 @@ watch-archive find "context graph"  # → id, [04:32], the line, across everythi
 Records are plain JSON, SRT and JPG on disk. `grep` and `jq` read them
 perfectly well without this tool, and `transcript.srt` drops straight into
 any video player. Full layout in [`docs/archive.md`](docs/archive.md).
-
-### How `transcribe` and `audio-q` stay current
-
-The scripts call Kyma using the `transcribe` and `audio-understand` aliases,
-not raw model IDs. When Kyma swaps the underlying model (Whisper v4,
-Voxtral, a faster ASR), watch-cli keeps working without an update — the
-alias points to whichever model is current. Run `watch-cli models` any time
-to see what's behind the alias today.
 
 ---
 
@@ -312,23 +260,146 @@ The output block is structured so an agent can parse it without help:
 
 ---
 
-## Prompt library
+## More
 
-Beyond the generic prompt above, five copy-paste prompts in
-[`prompts/`](prompts/) turn `watch` output into a specific artifact:
+Background, internals, and reference material — skip this unless you want the *why*, not just the *how*.
 
-| Goal | File |
+### Why this exists
+
+Large language models can't watch video natively — they read text and
+look at still images. You can hand a video to a multimodal API and get
+back a chat-style summary, but for an agent workflow that's the wrong
+artifact: the agent wants the raw frames and the full transcript so it
+can reason for itself, not someone else's pre-digested recap.
+
+A video is just frames + audio, and each piece already has a fast,
+near-free primitive:
+
+- `yt-dlp` downloads from any social platform
+- `ffmpeg` extracts evenly-spaced frames
+- An ASR model transcribes the audio
+- A multimodal LLM hears tone, music, SFX, language, mood
+
+Compose them and your agent has the materials to watch any social video.
+
+### How it works
+
+```mermaid
+flowchart LR
+    URL([URL]) --> YTDLP[yt-dlp]
+    YTDLP --> VIDEO[video.mp4]
+    VIDEO --> FFMPEG_V[ffmpeg]
+    FFMPEG_V --> FRAMES["frames/*.jpg"]
+    VIDEO --> FFMPEG_A[ffmpeg]
+    FFMPEG_A --> AUDIO[audio.mp3]
+    AUDIO --> TRANSCRIBE["Kyma /v1/audio/transcriptions<br/>(Whisper Large v3 Turbo, 228× realtime)"]
+    AUDIO --> UNDERSTAND["Kyma /v1/audio/understand<br/>(Gemini 3 Flash audio — tone/music/SFX)"]
+```
+
+Each step is a primitive. None of them needs a vision LLM.
+
+The `transcribe` and `audio-q` commands call Kyma using capability
+aliases (`transcribe`, `audio-understand`), not raw model IDs. When Kyma
+swaps the underlying model (Whisper v4, Voxtral, a faster ASR), watch-cli
+keeps working without an update — the alias points to whichever model is
+current. Run `watch-cli models` any time to see what's behind the alias
+today.
+
+### Why Kyma
+
+watch-cli uses Kyma as its AI backend. A few things you get for free:
+
+![models](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/models.json)
+![creators](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/creators.json)
+![free credit](https://img.shields.io/endpoint?url=https://api.kymaapi.com/api/badge/free-credit.json)
+
+- **One key, every model in this CLI.** watch-cli calls Kyma using
+  capability aliases (`transcribe`, `audio-understand`). When Kyma swaps
+  in a better model behind the alias, your scripts keep working unchanged.
+- **Per-call cost in the response.** Every transcribe gives you a real
+  number, not an end-of-month dashboard surprise.
+- **Auto-fallback across providers.** If the underlying audio provider is
+  throttling or down, Kyma routes through another. Your script never sees
+  the outage.
+- **Free credit at signup.** About 9 hours of audio at the default rate.
+  Enough to know if you like it before you spend a cent.
+
+The badges above pull live from `api.kymaapi.com/api/stats`, so the model
+count and free-credit number stay current without a watch-cli release.
+
+### Pricing
+
+Most subscription summary tools start around **$15/month** and deliver a
+polished, human-readable summary. If you're feeding an AI agent, that's the
+wrong artifact — agents need raw frames and the full transcript to reason
+for themselves, not someone else's pre-digested recap.
+
+A typical research session is 1–3 videos, not 100. Through Kyma — the default
+backend — transcription is the only paid step; frame extraction is local
+ffmpeg, free.
+
+| Video length | Transcribe cost |
 |---|---|
-| Coding walkthrough → working project | [`implement-from-video.md`](prompts/implement-from-video.md) |
-| System talk → interactive architecture diagram | [`extract-architecture.md`](prompts/extract-architecture.md) |
-| UI / motion demo → working React component | [`clone-ux.md`](prompts/clone-ux.md) |
-| Paper / research talk → runnable notebook | [`paper-to-code.md`](prompts/paper-to-code.md) |
-| Long tutorial → step-by-step cheat sheet | [`tutorial-walkthrough.md`](prompts/tutorial-walkthrough.md) |
+| 5 minutes (tweet, short demo) | ~$0.005 |
+| 1 hour (LinkedIn talk, podcast) | ~$0.05 |
+| 2 hours (conference talk) | ~$0.11 |
 
-Paste the chosen prompt above the `watch` output, hand the whole thing
-to your agent.
+| This month you watch | You pay |
+|---|---|
+| 0 videos | $0 |
+| 1 one-hour video | ~$0.05 |
+| 100 one-hour videos | ~$5 |
 
-### Use as a Claude Code skill
+No monthly minimum, no seat license, no lock-in. Free credit at Kyma
+signup covers about 9 hours of transcribe — enough to run the full
+pipeline end-to-end before you spend a cent. A BYOK path is available —
+see [Setup](#setup) and `.env.example`.
+
+### Limitations
+
+watch-cli is fast and cheap because it composes primitives instead of
+calling a video LLM. The tradeoffs are honest.
+
+**What works well:**
+- Talking-head content: tutorials, conference talks, lectures, walkthroughs
+- Architecture and system diagrams shown for at least 3 seconds
+- Code that stays on screen long enough to read
+- ~95 languages (anything Whisper v3 turbo supports)
+
+**What works poorly:**
+- Music videos, action movies, fast-cut content. Eight evenly-spaced
+  frames miss key moments. Bump count: `watch <url> 24`.
+- Editor sessions that scroll fast through code. Same fix.
+- Audio with heavy background music and overlapping speakers. Transcript
+  quality drops. Use `audio-q` for a scene description instead.
+- Videos longer than ~2 hours. The transcribe provider has a 25MB audio
+  cap. Watch-cli auto-downsamples but a 3-hour talk may still exceed.
+  Workaround: split via `ffmpeg -ss` before piping.
+
+**What does not work yet:**
+- Region-locked videos (some YouTube, TikTok). yt-dlp returns an error;
+  watch-cli surfaces it.
+- Live streams. Download finishes only after the stream ends.
+- Silent screencasts. Transcribe returns empty. Increase frame count and
+  use `audio-q` for any sound design instead.
+
+**Frame count guidance:**
+
+| Video type | Recommended `frame-count` |
+|---|---|
+| Short tweet / clip (<2 min) | 4 to 8 (default) |
+| Standard tutorial / talk (5–20 min) | 8 to 16 |
+| Long talk / lecture (20–60 min) | 16 to 24 |
+| Conference talk / multi-hour (>1 hr) | 24 to 32 |
+| Fast-cut or dense UI demo | Double the recommendation for that length |
+
+### Prompt library details
+
+The full prompt table lives in [What you can build](#what-you-can-build)
+above. Paste the chosen prompt above the `watch` output, hand the whole
+thing to your agent.
+
+**Use as a Claude Code skill:**
 
 Drop [`skills/watch-cli/`](skills/watch-cli/) into your
 `~/.claude/skills/` folder and the agent will pick up `/watch <url>`
@@ -339,90 +410,13 @@ mkdir -p ~/.claude/skills
 cp -r skills/watch-cli ~/.claude/skills/
 ```
 
----
-
-## How it works
-
-```text
-URL ──▶ yt-dlp ──▶ video.mp4 ──┬──▶ ffmpeg ──▶ frames/*.jpg
-                                │
-                                └──▶ ffmpeg ──▶ audio.mp3 ──┬──▶ Kyma /v1/audio/transcriptions
-                                                            │     (Whisper Large v3 Turbo, 228× realtime)
-                                                            │
-                                                            └──▶ Kyma /v1/audio/understand
-                                                                  (Gemini 3 Flash audio — tone/music/SFX)
-```
-
-Each step is a primitive. None of them needs a vision LLM.
-
----
-
-## Show what you build
+### Show what you build
 
 Built something cool from a video? Drop it in
 [Discussions](https://github.com/huytrinhx/watch-cli-win/discussions) under
 **Show and tell**. Post the source URL, the prompt you used, and your
 artifact. Curated highlights make it back into the README.
 
----
-
-## Limitations and cost
-
-Watch-cli is fast and cheap because it composes primitives instead of
-calling a video LLM. The tradeoffs are honest.
-
-### Cost per video
-
-Transcription is the only paid step. Frame extraction is local ffmpeg,
-free.
-
-| Video length | Transcribe cost |
-|---|---|
-| 5 minutes (tweet, short demo) | ~$0.005 |
-| 1 hour (LinkedIn talk, podcast) | ~$0.05 |
-| 2 hours (conference talk) | ~$0.11 |
-
-Free credit at Kyma signup covers about 9 hours of transcribe. A BYOK
-path is available — see `.env.example`.
-
-### What works well
-
-- Talking-head content: tutorials, conference talks, lectures, walkthroughs
-- Architecture and system diagrams shown for at least 3 seconds
-- Code that stays on screen long enough to read
-- ~95 languages (anything Whisper v3 turbo supports)
-
-### What works poorly
-
-- Music videos, action movies, fast-cut content. Eight evenly-spaced
-  frames miss key moments. Bump count: `watch <url> 24`.
-- Editor sessions that scroll fast through code. Same fix.
-- Audio with heavy background music and overlapping speakers. Transcript
-  quality drops. Use `audio-q` for a scene description instead.
-- Videos longer than ~2 hours. The transcribe provider has a 25MB audio
-  cap. Watch-cli auto-downsamples but a 3-hour talk may still exceed.
-  Workaround: split via `ffmpeg -ss` before piping.
-
-### What does not work yet
-
-- Region-locked videos (some YouTube, TikTok). yt-dlp returns an error;
-  watch-cli surfaces it.
-- Live streams. Download finishes only after the stream ends.
-- Silent screencasts. Transcribe returns empty. Increase frame count and
-  use `audio-q` for any sound design instead.
-
-### Frame count guidance
-
-| Video type | Recommended `frame-count` |
-|---|---|
-| Short tweet / clip (<2 min) | 4 to 8 (default) |
-| Standard tutorial / talk (5–20 min) | 8 to 16 |
-| Long talk / lecture (20–60 min) | 16 to 24 |
-| Conference talk / multi-hour (>1 hr) | 24 to 32 |
-| Fast-cut or dense UI demo | Double the recommendation for that length |
-
----
-
-## License
+### License
 
 MIT. © 2026 Son Piaz (Nguyễn Tùng Sơn) for the original [watch-cli](https://github.com/sonpiaz/watch-cli). This fork © 2026 huytrinhx.
