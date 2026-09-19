@@ -169,7 +169,7 @@ frames.
 ### Example 1 — text format
 
 ```text
-$ watch https://www.youtube.com/watch?v=abc123
+$ watch "https://www.youtube.com/watch?v=abc123"
 WATCH_OUTPUT_VERSION: 1
 VIDEO: /tmp/dl-video/abc123.mp4
 DURATION: 218

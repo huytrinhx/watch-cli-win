@@ -380,7 +380,7 @@ if (( WITH_LOCAL )); then
   echo
   echo "Try it offline:"
   echo "    export WATCH_AUDIO_MODE=local"
-  echo "    watch https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  echo '    watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ"'
 
   # TODO(phase-3+): first-run prompt in bin/transcribe to offer the
   # download when the user sets WATCH_AUDIO_MODE=local with no model
@@ -424,4 +424,4 @@ fi
 
 echo
 green "Done. Try it:"
-echo "    watch https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+echo '    watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ"'

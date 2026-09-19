@@ -7,15 +7,22 @@
 Eyes and ears for your AI agent. watch-cli composes `yt-dlp` + `ffmpeg` + a Whisper-class ASR into a single command that hands an agent the raw materials to "watch" any video: VIDEO + FRAMES + TRANSCRIPT, ready for an LLM to read frames as images and transcript as text.
 
 ```bash
-watch https://twitter.com/anyone/status/12345
+watch "https://twitter.com/anyone/status/12345"
 ```
 
 Works on YouTube, X, LinkedIn, TikTok, Reddit, Vimeo, and Facebook. Login-walled posts (LinkedIn, private X, FB) work with `WATCH_BROWSER=auto`, which reads cookies from a browser you are signed in to.
 
+> **Always quote the URL.** A pasted YouTube/social link often contains
+> an unquoted `&` (`&t=45s`, tracking params, …) — without quotes your
+> shell reads that as "run this in the background, then run the rest as
+> a separate command," so only part of the URL is actually passed in.
+> `watch-cli` detects when this happened and prints a note, but quoting
+> up front avoids it entirely.
+
 **What it looks like:**
 
 ```text
-$ watch https://www.linkedin.com/posts/some-talk_activity-12345
+$ watch "https://www.linkedin.com/posts/some-talk_activity-12345"
 
 VIDEO: /tmp/dl-video/abc123.mp4
 DURATION: 218
@@ -133,7 +140,7 @@ Downloading https://github.com/huytrinhx/watch-cli-win/releases/latest/download/
 ✓ Symlinked binaries to /home/<you>/.local/bin
 
 Done. Try it:
-    watch https://www.youtube.com/watch?v=dQw4w9WgXcQ
+    watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 ```
 
 > If you instead see a yellow line saying
@@ -240,8 +247,11 @@ terminal.
 **Step 5 — Try it.**
 
 ```bash
-watch https://www.youtube.com/watch?v=dQw4w9WgXcQ
+watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 ```
+
+Always wrap the URL in quotes like this — see the note under
+[Install](#install) on why.
 
 watch-cli reads `~/.config/watch-cli/env` automatically on every run —
 you don't need to restart the terminal, edit `~/.bashrc`, or `export`
@@ -249,14 +259,18 @@ anything by hand. If it works, you'll see `VIDEO:`, `FRAMES:`, and
 `TRANSCRIPT:` sections printed out.
 
 A few other commands to try once that works — see [Commands](#commands)
-for the full list:
+for the full list. `transcribe` and `audio-q` work on a local file, not
+a URL directly, so grab one with `dl-video` first:
 
 ```bash
-# Just get the transcript (no video download step to look at)
-transcribe https://www.youtube.com/watch?v=dQw4w9WgXcQ
+# Download once, reuse the local path below
+VIDEO="$(dl-video "https://www.youtube.com/watch?v=dQw4w9WgXcQ")"
+
+# Just get the transcript (no frames)
+transcribe "$VIDEO"
 
 # Ask a question about the audio itself — tone, music, SFX, language
-audio-q https://www.youtube.com/watch?v=dQw4w9WgXcQ "What's the tone of this video?"
+audio-q "$VIDEO" "What's the tone of this video?"
 
 # Confirm your key works and see which models are live on Kyma
 models
@@ -334,8 +348,8 @@ models [--all]
 **Watch once, keep it** — every successful run is archived to `~/.watch-cli/archive`, so the same video is never transcribed twice. A second `watch` on the same URL skips both the download and the ASR call and prints byte-identical output.
 
 ```bash
-watch https://youtu.be/xyz          # first run: downloads, transcribes
-watch https://youtu.be/xyz          # cache hit, no API spend
+watch "https://youtu.be/xyz"          # first run: downloads, transcribes
+watch "https://youtu.be/xyz"          # cache hit, no API spend
 watch-archive find "context graph"  # → id, [04:32], the line, across everything
 ```
 
@@ -360,6 +374,14 @@ WATCH_BROWSER=firefox watch <url>   # one browser
 
 Cookies are read from the local browser profile by yt-dlp, sent only to
 that platform, and never stored or uploaded.
+
+**On Windows/WSL2**, sign in to the platform in **Firefox on Windows**
+first, then run with `WATCH_BROWSER=firefox` — watch-cli auto-detects
+your Windows Firefox profile under `/mnt/c/Users/...` and reads its
+cookies with no manual export step. Chrome/Edge/Brave can't do this
+(Windows encrypts their cookies in a way WSL can't decrypt), so Firefox
+is the one-step path on this platform — see
+[docs/cookies.md#windows-wsl2](docs/cookies.md#windows-wsl2).
 
 For servers / CI without browsers, pass a manual cookies file:
 

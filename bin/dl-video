@@ -30,6 +30,9 @@ ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 source "$ROOT_DIR/lib/version.sh"
 # shellcheck source=../lib/hash.sh
 source "$ROOT_DIR/lib/hash.sh"
+# shellcheck source=../lib/shell-safety.sh
+source "$ROOT_DIR/lib/shell-safety.sh"
+watch_cli_warn_if_backgrounded
 
 URL=""
 OUTDIR="/tmp/dl-video"
@@ -116,6 +119,29 @@ _is_wsl() {
   [[ "$(uname -s)" == "Linux" ]] && grep -qi microsoft /proc/version 2>/dev/null
 }
 
+# Locate a Windows-native Firefox profile from inside WSL2, so
+# WATCH_BROWSER=firefox works against the session the user is actually
+# signed into (on Windows) instead of a WSL-local Firefox that almost
+# nobody installs separately. Chrome/Edge/Brave can't get the same
+# treatment: they encrypt cookies with Windows DPAPI, which nothing on
+# the Linux side can decrypt (see docs/cookies.md#windows-wsl2) — Firefox
+# stores cookies in a plain SQLite file, so reading it across the /mnt/c
+# boundary just works.
+#
+# Prefers *.default-release (Firefox's profile name since ~2020) and
+# falls back to the older *.default. Multiple Windows user accounts each
+# get their own /mnt/c/Users/<name>/..., so this can match more than one
+# profile; the first hit wins; set WATCH_BROWSER=none and pass a manual
+# --cookies file if that's the wrong one.
+_find_windows_firefox_profile() {
+  local pattern profile
+  for pattern in '.default-release' '.default'; do
+    profile="$(ls -d /mnt/c/Users/*/AppData/Roaming/Mozilla/Firefox/Profiles/*"$pattern" 2>/dev/null | head -1)"
+    [[ -n "$profile" ]] && { printf '%s' "$profile"; return 0; }
+  done
+  return 1
+}
+
 # Classify yt-dlp's last stderr log into one of the documented tags.
 # Falls through to download-other when nothing matches.
 classify_failure() {
@@ -173,8 +199,29 @@ case "${WATCH_BROWSER:-}" in
   *) BROWSERS=("$WATCH_BROWSER") ;;
 esac
 
+# Tracked so the Tier 4 message below can tell the difference between
+# "never tried a Windows Firefox profile" and "tried it, still failed".
+WIN_FF_PROFILE=""
+
 # ${arr[@]+"${arr[@]}"} keeps `set -u` happy on an empty array (bash 3.2).
 for BROWSER in ${BROWSERS[@]+"${BROWSERS[@]}"}; do
+  # On WSL2, "firefox" alone points yt-dlp at a WSL-local Firefox profile
+  # that almost never exists. Try the Windows-native profile first — the
+  # one the user is actually signed into — before falling through to the
+  # (expected-to-fail) plain attempt.
+  if [[ "$BROWSER" == "firefox" ]] && _is_wsl; then
+    WIN_FF_PROFILE="$(_find_windows_firefox_profile || true)"
+    if [[ -n "$WIN_FF_PROFILE" ]]; then
+      echo "[dl-video] anonymous fetch failed, retrying with your Windows Firefox cookies ($WIN_FF_PROFILE)…" >&2
+      if run_dl --cookies-from-browser "firefox:$WIN_FF_PROFILE" 2>/tmp/dl-video.last.log; then
+        if [[ -s "$OUT" ]]; then
+          echo "$OUT"
+          exit 0
+        fi
+      fi
+      continue
+    fi
+  fi
   echo "[dl-video] anonymous fetch failed, retrying with $BROWSER cookies…" >&2
   if run_dl --cookies-from-browser "$BROWSER" 2>/tmp/dl-video.last.log; then
     if [[ -s "$OUT" ]]; then
@@ -188,18 +235,39 @@ done
 TAG="$(classify_failure)"
 case "$TAG" in
   download-auth)
-    if _is_wsl; then
+    if _is_wsl && [[ -n "$WIN_FF_PROFILE" ]]; then
+      # We DID find and try a Windows-native Firefox profile automatically
+      # — cookies alone didn't fix it, so re-suggesting the same cookies
+      # dance would be useless noise. Point at the more likely causes.
+      cat >&2 <<ERR
+[dl-video] error: download failed for $URL tag=download-auth — already tried your Windows Firefox cookies ($WIN_FF_PROFILE), still blocked
+
+Things to check:
+  1. Are you actually signed in to the platform in that Windows Firefox
+     profile? Open Firefox on Windows, sign in, then retry.
+  2. Close Firefox before retrying — an open Firefox holds a lock on its
+     cookie database that can make the read fail or return stale cookies.
+  3. If you use a different Firefox profile, or multiple Windows user
+     accounts, the wrong one may have been picked automatically. Pass
+     --cookies <file> with a manually exported cookies.txt instead:
+     https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md#windows-wsl2
+  4. This may not be a cookies problem at all — some videos are
+     region-locked or blocked by YouTube's bot-check independent of
+     sign-in state. Try a different public URL to sanity-check the setup.
+ERR
+    elif _is_wsl; then
       cat >&2 <<ERR
 [dl-video] error: download failed for $URL tag=download-auth — WATCH_BROWSER can't reach your Windows browser under WSL2, see below
 
 Two ways to fix:
-  1. Firefox only: export cookies straight from your Windows Firefox
-     profile without leaving WSL (Chrome/Edge/Brave encrypt cookies with
-     Windows DPAPI, which WSL cannot decrypt — this only works for Firefox):
-       ls "/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/"
-       yt-dlp --cookies-from-browser "firefox:/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>" \\
-              --cookies ~/cookies.txt --skip-download "$URL"
-       watch-cli <url> --cookies ~/cookies.txt
+  1. Recommended: sign in to the platform in Firefox on Windows, then
+     re-run with
+       WATCH_BROWSER=firefox watch <url>
+     watch-cli auto-detects your Windows Firefox profile under
+     /mnt/c/Users/*/AppData/Roaming/Mozilla/Firefox/Profiles/ and reads
+     its cookies directly — no manual export needed. (Chrome/Edge/Brave
+     can't get the same treatment: they encrypt cookies with Windows
+     DPAPI, which nothing on the Linux side can decrypt.)
 
   2. Any browser: export cookies.txt with a browser extension instead,
      save it somewhere WSL can read (e.g. /mnt/c/Users/<you>/Downloads/),

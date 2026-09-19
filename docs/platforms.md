@@ -38,10 +38,13 @@ Two things that trip people up:
   under `/mnt/*` go through a Windows/Linux translation layer (DrvFs) that
   is slower and can silently drop the executable bit `chmod +x` sets,
   which breaks the installer's symlink step.
-- `WATCH_BROWSER=auto` (login-walled videos) does not see your Windows
-  browser session — WSL2 runs watch-cli as a Linux process. See
-  [docs/cookies.md#windows-wsl2](cookies.md#windows-wsl2) for the two
-  paths that actually work on this platform.
+- `WATCH_BROWSER=auto`/`chrome`/`edge` (login-walled videos) does not see
+  your Windows browser session — WSL2 runs watch-cli as a Linux process.
+  `WATCH_BROWSER=firefox` is the exception: sign in to the platform in
+  Firefox on Windows first, and watch-cli auto-detects that profile under
+  `/mnt/c/Users/...` with no manual export step. See
+  [docs/cookies.md#windows-wsl2](cookies.md#windows-wsl2) for why Firefox
+  works this way and Chrome/Edge/Brave don't.
 
 `install.sh` detects a bare Git Bash/MSYS/Cygwin shell (i.e. Windows
 without WSL) and refuses to run, printing the WSL2 setup steps instead of

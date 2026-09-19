@@ -110,22 +110,32 @@ the extensions above.
 [docs/platforms.md#windows](platforms.md#windows)), which changes both
 options above:
 
-**`WATCH_BROWSER=auto` (and `WATCH_BROWSER=chrome`/`edge`/`firefox`) does
-not see your Windows browser.** WSL2 runs watch-cli as a Linux process, so
+**`WATCH_BROWSER=auto` (and `WATCH_BROWSER=chrome`/`edge`) does not see
+your Windows browser.** WSL2 runs watch-cli as a Linux process, so
 `yt-dlp --cookies-from-browser` only looks for a browser profile inside
-the WSL filesystem — not the Windows-native Chrome/Edge/Firefox at
+the WSL filesystem by default — not the Windows-native Chrome/Edge at
 `/mnt/c/Users/<you>/AppData/...` you're actually signed into. Unless
 you've separately installed and signed into a browser inside WSL itself,
-Option 1 silently finds nothing rather than failing with a useful error.
+these silently find nothing rather than failing with a useful error.
 
-Two paths that actually work on this platform:
+**`WATCH_BROWSER=firefox` is the exception — it's automatic.** `dl-video`
+detects WSL2 and auto-locates your Windows-side Firefox profile under
+`/mnt/c/Users/*/AppData/Roaming/Mozilla/Firefox/Profiles/*.default-release`
+(falling back to `*.default`), then reads its cookies directly. No manual
+export, no path-typing. The prerequisite is just: sign in to the platform
+in Firefox on Windows first, then run:
 
-### Firefox: export directly from your Windows profile, no extension
+```bash
+WATCH_BROWSER=firefox watch "<url>"
+```
 
-Firefox doesn't encrypt cookie values the way Chrome/Edge/Brave do — those
-use Windows DPAPI, which a Linux/WSL process cannot call, so this trick is
-Firefox-only. Point yt-dlp at your Windows-side Firefox profile from
-inside WSL:
+Two paths for everything else:
+
+### Firefox: pointing at a specific profile yourself
+
+Auto-detection picks the first Windows Firefox profile it finds, which is
+wrong if you have multiple Windows user accounts or multiple Firefox
+profiles. Point yt-dlp at the right one explicitly instead:
 
 ```bash
 # Find your profile folder name:
@@ -134,7 +144,7 @@ ls "/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/"
 yt-dlp --cookies-from-browser "firefox:/mnt/c/Users/<you>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>.default-release" \
        --cookies ~/cookies.txt --skip-download "https://www.linkedin.com"
 
-watch <url> --cookies ~/cookies.txt
+watch "<url>" --cookies ~/cookies.txt
 ```
 
 Close Firefox first if the export fails — an open browser can hold a lock

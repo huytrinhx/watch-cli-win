@@ -34,12 +34,11 @@ Supported platforms: YouTube, X / Twitter, LinkedIn, TikTok, Vimeo, Reddit, Face
 
 ### Login-walled videos on Windows (WSL2)
 
-If `watch` fails with `tag=download-auth` and you're running under WSL2 (`grep -qi microsoft /proc/version`), do not suggest `WATCH_BROWSER=auto` or any `WATCH_BROWSER=<browser>` value — WSL2 runs as a Linux process, so it cannot see the user's Windows-native browser session, and the flag will silently find nothing instead of failing with a useful error.
+If `watch` fails with `tag=download-auth` and you're running under WSL2 (`grep -qi microsoft /proc/version`), do not suggest `WATCH_BROWSER=auto`, `chrome`, or `edge` — WSL2 runs as a Linux process, so it cannot see the user's Windows-native Chrome/Edge/Brave session (those encrypt cookies with Windows DPAPI, which a Linux process cannot decrypt even pointed at the right profile path), and the flag will silently find nothing.
 
-Instead, with the user's explicit consent (never do this silently):
+`WATCH_BROWSER=firefox` is the exception and usually the right first suggestion: `dl-video` auto-detects the user's Windows-side Firefox profile under `/mnt/c/Users/*/AppData/Roaming/Mozilla/Firefox/Profiles/` and reads its cookies with no manual export step. With the user's explicit consent (never do this silently), suggest: "sign in to the platform in Firefox on Windows, then re-run with `WATCH_BROWSER=firefox watch <url>`."
 
-- **If the user is signed into the target platform in Windows Firefox**, offer to export the cookies yourself: locate their profile under `/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/`, run `yt-dlp --cookies-from-browser "firefox:<that path>" --cookies <tmp file> --skip-download <url>` from the WSL shell, then call `watch <url> --cookies <tmp file>`, and delete the temporary cookies file afterward. This works because Firefox doesn't encrypt cookie values with Windows DPAPI the way Chrome/Edge do.
-- **If they use Chrome, Edge, or Brave instead**, this trick cannot work — those browsers encrypt cookies with Windows DPAPI, which a WSL/Linux process cannot decrypt even when pointed at the right profile path. Ask the user to export `cookies.txt` via a browser extension instead (see [docs/cookies.md#windows-wsl2](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md#windows-wsl2)) and pass it with `--cookies <file>`.
+If they don't use Firefox, or auto-detection picks the wrong Windows profile (multiple Windows user accounts, multiple Firefox profiles), fall back to a manual `cookies.txt` export via a browser extension (see [docs/cookies.md#windows-wsl2](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md#windows-wsl2)) and pass it with `--cookies <file>`.
 
 ## What you get back
 

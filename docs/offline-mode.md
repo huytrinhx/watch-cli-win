@@ -274,7 +274,7 @@ A new installer flag that bootstraps the local path end-to-end:
 
    Try it offline:
      export WATCH_AUDIO_MODE=local
-     watch https://www.youtube.com/watch?v=dQw4w9WgXcQ
+     watch "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
    ```
 
 `--with-local` is independent of `--with-skill` and `--with-mcp`;
