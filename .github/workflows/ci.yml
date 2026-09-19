@@ -42,25 +42,14 @@ jobs:
           echo "ok: lib/version.sh $WATCH_CLI_VERSION matches $latest"
 
   smoke:
-    name: smoke (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest]
+    name: smoke (ubuntu-latest)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install deps (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install yt-dlp ffmpeg jq
-
       - name: Install deps (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y yt-dlp ffmpeg jq curl python3

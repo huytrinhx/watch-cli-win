@@ -77,7 +77,7 @@ _health_cache_lookup() {
     f="$WATCH_HEALTH_CACHE_DIR/${domain}.${status}"
     if [[ -f "$f" ]]; then
       local mtime now age
-      # `stat -c %Y` is GNU; `stat -f %m` is BSD/macOS. Try both.
+      # `stat -c %Y` is GNU; `stat -f %m` is the BSD variant. Try both.
       if mtime="$(stat -c %Y "$f" 2>/dev/null)" && [[ -n "$mtime" ]]; then
         :
       else
@@ -107,8 +107,8 @@ _health_run_probe() {
       >/dev/null 2>&1
     return $?
   fi
-  # macOS has no `timeout` by default. `gtimeout` from coreutils or a
-  # background-PID-kill workaround would both fit; for simplicity skip
+  # A minimal Linux image without coreutils' `timeout` falls through here.
+  # A background-PID-kill workaround would fit; for simplicity skip
   # timeout-enforcement on those hosts and trust yt-dlp to fail fast on
   # a broken extractor (it usually does within 1-2s).
   yt-dlp --simulate --quiet --skip-download --no-warnings "$url" \

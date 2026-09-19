@@ -121,9 +121,6 @@ done
 if (( ${#missing[@]} > 0 )); then
   red "Missing dependencies: ${missing[*]}"
   echo
-  echo "Install on macOS:"
-  echo "  brew install yt-dlp ffmpeg jq"
-  echo
   echo "Install on Debian/Ubuntu:"
   echo "  sudo apt install yt-dlp ffmpeg jq python3 curl"
   echo
@@ -150,10 +147,10 @@ _resolve_tarball_url() {
 }
 
 # Portable SHA256 of a file: prefer GNU coreutils' sha256sum (always present
-# on Linux/WSL2), fall back to macOS's shasum, then to python3. install.sh
-# must stay self-contained (it's often piped straight from curl with no
-# sibling lib/ files on disk yet), so this is inlined rather than sourced
-# from lib/hash.sh.
+# on Linux/WSL2), fall back to shasum, then to python3. install.sh must stay
+# self-contained (it's often piped straight from curl with no sibling lib/
+# files on disk yet), so this is inlined rather than sourced from
+# lib/hash.sh.
 _sha256_file() {
   local file="$1"
   if command -v sha256sum >/dev/null 2>&1; then
@@ -297,28 +294,6 @@ if (( WITH_LOCAL )); then
 
   if [[ -z "$WHISPER_BIN" ]]; then
     case "$OS_NAME" in
-      Darwin)
-        # brew installs touch the global environment — confirm
-        # before running.
-        if ! command -v brew >/dev/null 2>&1; then
-          red "Homebrew required to install whisper-cpp on macOS, but 'brew' is not on PATH."
-          echo "Install Homebrew (https://brew.sh) and re-run ./install.sh --with-local."
-          exit 1
-        fi
-        echo
-        echo "whisper-cli not found. About to run:"
-        echo "    brew install whisper-cpp"
-        printf "Proceed? [Y/n] "
-        read -r ans
-        case "$ans" in
-          n|N|no|NO)
-            yellow "Skipped whisper-cpp install. Run 'brew install whisper-cpp' manually and re-run."
-            exit 1
-            ;;
-        esac
-        brew install whisper-cpp
-        WHISPER_BIN="$(command -v whisper-cli)"
-        ;;
       Linux)
         # Debian / Ubuntu / any Linux: clone + build from source.
         if [[ -f /etc/os-release ]]; then
@@ -357,8 +332,7 @@ if (( WITH_LOCAL )); then
   green "✓ whisper-cli installed at $WHISPER_BIN"
 
   # 2. Disk-space check before downloading. The spec requires ≥ 2 GB
-  # free at the model dir; df -P is POSIX so it works on macOS and
-  # Linux without flag drift.
+  # free at the model dir; df -P is POSIX so it works without flag drift.
   mkdir -p "$MODEL_DIR"
   AVAIL_KB="$(df -P "$MODEL_DIR" | tail -1 | awk '{print $4}')"
   # 2 GB = 2*1024*1024 KB = 2097152 KB.

@@ -183,7 +183,7 @@ fi
 # Only the API paths have the 25MB upload cap; whisper.cpp reads from
 # disk so any size goes. Skip the check in local mode.
 if [[ "$WATCH_AUDIO_RESOLVED_MODE" != "local" ]]; then
-  # POSIX size check: wc -c works on both macOS and Linux without a flag.
+  # POSIX size check: wc -c works without a GNU-specific flag.
   SIZE="$(wc -c < "$AUDIO" | tr -d ' ')"
   if (( SIZE > 25 * 1024 * 1024 )); then
     echo "[transcribe] error: audio is $((SIZE / 1024 / 1024))MB — exceeds 25MB cap. Trim source first. tag=transcribe-other" >&2

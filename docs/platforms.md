@@ -52,7 +52,7 @@ limping through a half-working install.
 This matrix was last verified against:
 
 - `yt-dlp` 2024.12.x (any recent build is fine)
-- macOS 14, Linux Debian 12, Windows 11 (WSL2, Ubuntu 22.04/24.04)
+- Linux Debian 12, Windows 11 (WSL2, Ubuntu 22.04/24.04)
 
 If a platform fails on your machine, first run:
 

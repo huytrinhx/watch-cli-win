@@ -22,7 +22,6 @@ extensions. Nothing is read unless you set the variable:
 
 - Chrome (default first try)
 - Firefox
-- Safari (macOS)
 - Edge
 - Brave
 - Chromium
@@ -163,11 +162,10 @@ data flows: browser profile → `yt-dlp` (local process) → platform CDN.
 Nothing else sees it.
 
 That said: any local process running as your user can also read these
-cookies. Homebrew install scripts, npm `postinstall` hooks, AI agents
-with shell access, anything you `curl | bash`. This is a property of
-how macOS and Linux user accounts work, not specific to watch-cli. For
-sensitive accounts, use a dedicated browser profile or a separate
-browser entirely.
+cookies. npm `postinstall` hooks, AI agents with shell access,
+anything you `curl | bash`. This is a property of how Linux user
+accounts work, not specific to watch-cli. For sensitive accounts, use
+a dedicated browser profile or a separate browser entirely.
 
 ---
 

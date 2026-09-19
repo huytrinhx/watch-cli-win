@@ -70,7 +70,7 @@ if [[ -z "$URL" ]]; then
 fi
 
 if ! command -v yt-dlp >/dev/null 2>&1; then
-  echo "[dl-video] error: yt-dlp not found on PATH. Install via 'brew install yt-dlp' or 'pipx install yt-dlp'. tag=missing-dep:yt-dlp" >&2
+  echo "[dl-video] error: yt-dlp not found on PATH. Install via 'sudo apt install yt-dlp' or 'pipx install yt-dlp'. tag=missing-dep:yt-dlp" >&2
   exit 2
 fi
 

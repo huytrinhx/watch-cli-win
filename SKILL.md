@@ -9,12 +9,6 @@ metadata:
       bins:
         - watch
     install:
-      - id: brew
-        kind: brew
-        formula: huytrinhx/tap/watch-cli
-        bins:
-          - watch
-        label: "Install watch-cli (Homebrew)"
       - id: release-0.3.4
         kind: shell
         command: "curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh | WATCH_CLI_VERSION=0.3.4 bash"
@@ -109,6 +103,6 @@ Pass `--no-cache` only when the source itself has changed. A failed transcriptio
 - The video download goes to the platform hosting it, through yt-dlp.
 - The extracted audio track is uploaded to Kyma API for transcription; frames and the video file stay on disk under `~/.watch-cli/archive`. With `--with-local` installed, transcription runs offline through whisper.cpp instead and nothing is uploaded.
 - Browser cookies are never read unless the user sets `WATCH_BROWSER` or passes `--cookies`; when they are, they go only to the platform that set them.
-- Installation is pinned: the release installer downloads a tagged tarball and verifies its SHA256 against the checksum published on the same GitHub Release. Homebrew does the same through the formula's `sha256`.
+- Installation is pinned: the release installer downloads a tagged tarball and verifies its SHA256 against the checksum published on the same GitHub Release.
 
 Transcription runs through Kyma API. Get a key at https://kymaapi.com/?src=skill:watch and set `KYMA_API_KEY`; a one-hour video costs about $0.05.

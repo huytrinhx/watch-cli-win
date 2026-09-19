@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Portable hashing for watch-cli.
 #
-# `shasum` (Perl's App::shasum) is a macOS default but is not guaranteed to
-# exist on a bare Linux box — including a fresh WSL2 Ubuntu install, which is
-# the supported Windows path (see docs/platforms.md#windows). GNU coreutils'
+# `shasum` (Perl's App::shasum) is not guaranteed to exist on a bare Linux
+# box — including a fresh WSL2 Ubuntu install, which is the supported
+# Windows path (see docs/platforms.md#windows). GNU coreutils'
 # sha1sum/sha256sum are always present there instead, so prefer those and
 # fall back to shasum, then to python3, so every supported OS has a path.
 

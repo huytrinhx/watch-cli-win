@@ -178,7 +178,7 @@ _route_local() {
   local bin
   if ! bin="$(_resolve_whisper_bin)"; then
     _audio_route_fail 2 "missing-dep:whisper-cli" \
-      "[$prefix] error: whisper-cli (or main) not found on PATH — install via 'brew install whisper-cpp' or run install.sh --with-local"
+      "[$prefix] error: whisper-cli (or main) not found on PATH — run install.sh --with-local"
     return 1
   fi
   local model

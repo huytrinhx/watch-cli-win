@@ -98,7 +98,7 @@ if [[ ! -s "$AUDIO" ]]; then
   fi
 fi
 
-# POSIX size check: wc -c works on both macOS and Linux without a flag.
+# POSIX size check: wc -c works without a GNU-specific flag.
 SIZE="$(wc -c < "$AUDIO" | tr -d ' ')"
 if (( SIZE > 19 * 1024 * 1024 )); then
   echo "[audio-q] error: audio is $((SIZE / 1024 / 1024))MB — exceeds 20MB inline cap. Trim source first. tag=transcribe-other" >&2

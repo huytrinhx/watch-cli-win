@@ -93,11 +93,6 @@ signup is enough to run the full pipeline end-to-end before you spend a cent.
 ## Install
 
 ```bash
-# macOS — Homebrew (recommended)
-brew tap huytrinhx/tap
-brew install watch-cli
-
-# Any OS — curl
 curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 ```
 
@@ -130,11 +125,7 @@ cd ~/.watch-cli && ./install.sh
 ```
 
 The installer checks for `yt-dlp`, `ffmpeg`, `jq`, `curl`, `python3` and
-symlinks the commands into `~/.local/bin`. On macOS:
-
-```bash
-brew install yt-dlp ffmpeg jq
-```
+symlinks the commands into `~/.local/bin`.
 
 On Debian/Ubuntu:
 

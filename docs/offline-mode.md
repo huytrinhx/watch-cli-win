@@ -64,17 +64,15 @@ both can force it with `WATCH_AUDIO_MODE=kyma`.
 ## whisper.cpp binary detection
 
 watch-cli probes two binary names, in order: `whisper-cli` (current
-upstream name; shipped by the Homebrew bottle and any whisper.cpp
-build from roughly mid-2024 onward), then `main` (legacy name from
-older builds, kept as a fallback so existing installs do not break).
+upstream name, used by any whisper.cpp build from roughly mid-2024
+onward), then `main` (legacy name from older builds, kept as a
+fallback so existing installs do not break).
 Resolution is `command -v whisper-cli` first, `command -v main`
 second. First hit wins; the resolved path is captured locally so
 debug logs record which binary was used.
 
 Install paths the implementer should be ready for:
 
-- **Homebrew (macOS):** package `whisper-cpp` (with hyphen), binary
-  `whisper-cli`. Bottle does not include a model.
 - **Build from source (Linux / any):** upstream uses CMake —
   `git clone https://github.com/ggml-org/whisper.cpp ~/.watch-cli/whisper.cpp && cd ~/.watch-cli/whisper.cpp && cmake -B build && cmake --build build -j --config Release`.
   Binary at `~/.watch-cli/whisper.cpp/build/bin/whisper-cli`;
@@ -86,8 +84,8 @@ Install paths the implementer should be ready for:
 ## Model lifecycle
 
 **Default model:** `ggml-large-v3-turbo` — multilingual, ~1.62 GB on
-disk, fastest of the large-v3 family on Apple Silicon. Comparable
-quality to the hosted `transcribe` alias.
+disk, fastest of the large-v3 family. Comparable quality to the
+hosted `transcribe` alias.
 
 **Storage path:** `~/.watch-cli/models/ggml-large-v3-turbo.bin`,
 overridable via `WATCH_MODELS_DIR`. Multiple models in the same
@@ -126,8 +124,7 @@ against a hash pinned in `lib/model-checksums.sh` (one entry per
 known model). Upstream publishes SHA1 only
 (`4af2b29d7ec73d781377bfd1758ca957a807e941` for `large-v3-turbo`);
 re-hash with SHA256 once at implementation time and pin it in-tree —
-SHA256 is what every other watch-cli artifact uses and what
-`shasum -a 256` defaults to on macOS.
+SHA256 is what every other watch-cli artifact uses.
 
 Mismatch → exit `1`, tag `model-checksum-mismatch`, message with
 expected/actual hashes and instructions to delete the partial file
@@ -257,21 +254,18 @@ under the same append-only rules as v1.
 A new installer flag that bootstraps the local path end-to-end:
 
 1. **Detect host OS.**
-2. **macOS:** if `whisper-cli` missing, print
-   `brew install whisper-cpp` (package `whisper-cpp`, binary
-   `whisper-cli`) and prompt before running. Do not run brew
-   automatically — brew installs touch the global environment.
-3. **Debian / Ubuntu / generic Linux:** if `whisper-cli` missing,
-   build from source into `~/.watch-cli/whisper.cpp/`
+2. **Debian / Ubuntu / generic Linux (including WSL2):** if
+   `whisper-cli` missing, build from source into
+   `~/.watch-cli/whisper.cpp/`
    (`git clone … && cmake -B build && cmake --build build -j --config Release`),
    then symlink `…/build/bin/whisper-cli` →
    `~/.local/bin/whisper-cli`. Requires `cmake` and a C++ toolchain;
    print an `apt install` hint and exit if either is missing.
-4. **Disk-space check** — ≥ 2 GB free at `~/.watch-cli/models/` or
+3. **Disk-space check** — ≥ 2 GB free at `~/.watch-cli/models/` or
    abort with `insufficient-disk`.
-5. **Download default model** with progress to stderr.
-6. **SHA256-verify** against pinned hash; mismatch aborts.
-7. **Print confirmation:**
+4. **Download default model** with progress to stderr.
+5. **SHA256-verify** against pinned hash; mismatch aborts.
+6. **Print confirmation:**
 
    ```text
    ✓ whisper-cli installed at /usr/local/bin/whisper-cli
@@ -290,7 +284,7 @@ combine or use any subset.
 
 ## Test plan
 
-The implementer must verify, on a clean macOS or Ubuntu host:
+The implementer must verify, on a clean Ubuntu or WSL2 host:
 
 1. **No binary, mode forced.** `WATCH_AUDIO_MODE=local`, no
    `whisper-cli` on `PATH` → exit `2`, stderr contains

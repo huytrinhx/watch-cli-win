@@ -52,7 +52,6 @@ Audit each time the README ships, the SKILL.md changes, or a new package goes ou
 - [ ] `SKILL.md` `description` frontmatter field
 - [ ] MCP server tool `description` field (once shipped)
 - [ ] npm package `description` field (once published)
-- [ ] Homebrew formula `desc` line (once shipped)
 - [ ] GitHub repo description (the field next to the repo name)
 - [ ] First line of any listing-submission PR body
 - [ ] First sentence of any blog or social post about the tool

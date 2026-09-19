@@ -3,7 +3,7 @@
 This document is the source of truth for the watch-cli release
 contract: semver policy, where the version number lives, what a tag
 triggers, and how a consumer pins to a specific version. Every
-downstream consumer (`install.sh`, the Homebrew tap, the
+downstream consumer (`install.sh`, the
 `@huytrinhx/watch-cli-mcp` npm package) reads a release artifact — a
 tag, a tarball, a SHA256 — and those artifacts have a stability
 promise.
@@ -16,9 +16,9 @@ Every install today hits `main` HEAD. `install.sh` clones the repo
 from `main`, and the README's curl one-liner fetches
 `raw.githubusercontent.com/huytrinhx/watch-cli-win/main/install.sh`. One bad
 commit on `main` therefore breaks every machine that runs the
-installer that minute, and there are zero published versions for
-Homebrew or any other packager to pin against. Tagged releases give
-downstream packagers a stable artifact and turn the v1 output schema
+installer that minute, and there are zero published versions for a
+packager to pin against. Tagged releases give downstream packagers
+a stable artifact and turn the v1 output schema
 promise (see [`output-schema.md`](output-schema.md)) into a concrete
 contract: "v1 means the tarball at tag v1.x.y."
 
@@ -63,10 +63,15 @@ source of truth* below rather than trusting a number written here.
 
 While the major is `0`, minor bumps are **allowed to contain breaking
 changes** — standard pre-1.0 semver. This gives the foundation specs
-(output-schema, exit-codes, offline-mode, releases, homebrew) one
+(output-schema, exit-codes, offline-mode, releases) one
 final shakeout before freeze. `0.X.0` may rename a JSON field, change
 an exit code, or rename a stderr tag if the change improves the
 spec.
+
+> This project shipped its first tag directly at `v1.0.0` (the
+> `huytrinhx/watch-cli-win` fork's first independent release), so the
+> pre-1.0 runway described in this section is historical context from
+> upstream rather than this repo's own history.
 
 `0.0.X` means **the output schema does not move**. That covers bug
 fixes, and it also covers additive work — a new sibling binary, a new
@@ -77,19 +82,18 @@ contract, not about the size of the diff.
 
 ### Cutoff to v1.0.0
 
-v1.0.0 is cut when all five of the following hold:
+The criteria below were upstream's intended gate before cutting a
+first stable tag. This fork shipped `v1.0.0` directly as its first
+independent release instead — see the note above — so treat this
+list as historical rationale rather than an active checklist:
 
 1. All foundation sub-specs are signed off: `output-schema.md`,
-   `exit-codes.md`, `offline-mode.md`, `releases.md` (this file),
-   `homebrew.md`.
+   `exit-codes.md`, `offline-mode.md`, `releases.md` (this file).
 2. The output schema in v1 has at least one external consumer in
    production. The MCP server in `mcp-server/` already meets this — it
    returns the v1 JSON shape verbatim.
-3. The Homebrew tap is published and one user has installed via brew
-   successfully (see [`homebrew.md`](homebrew.md)).
-4. 30 days of green CI on `main` after the last spec sign-off, with
-   the full matrix passing on macOS and Ubuntu.
-5. No open issue tagged `schema-breaking` or `exit-code-breaking`.
+3. 30 days of green CI on `main` after the last spec sign-off.
+4. No open issue tagged `schema-breaking` or `exit-code-breaking`.
 
 Cutting v1.0.0 ends the breaking-change runway. After v1.0.0, any
 schema or exit-code change requires a major bump and the v1
@@ -160,8 +164,8 @@ get added after v1.0.0 if needed.
    git tag -a vX.Y.Z -m "vX.Y.Z"
    git push origin vX.Y.Z
    ```
-5. The release workflow fires on the tag push and creates the GH
-   Release, publishes the npm package, and bumps the Homebrew tap.
+5. The release workflow fires on the tag push, creates the GH
+   Release, and publishes the npm package.
 
 Tags are cut from `main` only. The release workflow asserts the tag's
 commit is an ancestor of `origin/main`.
@@ -188,7 +192,6 @@ Output schema: v1 (no change since v0.3.0). See
 [output-schema.md](https://github.com/huytrinhx/watch-cli-win/blob/vX.Y.Z/docs/output-schema.md).
 
 ## Install
-    brew tap huytrinhx/tap && brew install watch-cli            # macOS
     curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/vX.Y.Z/install.sh | bash
     WATCH_CLI_VERSION=X.Y.Z curl -fsSL <same-url> | bash       # pin
 
@@ -229,8 +232,6 @@ sha256sum watch-cli.tar.gz | awk '{print $1}' > watch-cli.tar.gz.sha256
 ```
 
 Tarball name is `watch-cli.tar.gz` — fixed, not version-suffixed.
-The Homebrew formula resolves the per-version URL via `v#{version}`
-interpolation (see [`homebrew.md`](homebrew.md)).
 
 ### 4. Create the GH Release
 
@@ -261,14 +262,6 @@ Requires `NPM_TOKEN` repo secret scoped to publish under `@huytrinhx/`.
 the version-bump PR includes a bump of `mcp-server/package.json` to
 match.
 
-### 6. Bump the Homebrew tap
-
-Opens a PR against `huytrinhx/homebrew-tap` with the new `version` and
-`sha256` in `Formula/watch-cli.rb`. Full mechanism in
-[`homebrew.md`](homebrew.md). Requires the `HOMEBREW_TAP_PAT` repo
-secret (fine-grained PAT scoped to `huytrinhx/homebrew-tap`,
-contents:write + pull-requests:write).
-
 ### Required repo secrets
 
 - `NPM_TOKEN` — step 5; publish under `@huytrinhx/` on npm.
@@ -278,16 +271,6 @@ contents:write + pull-requests:write).
   New repository secret. Without this, the `publish-mcp` job fails
   and no MCP server is published — the GH Release and tarball are
   unaffected.
-- `HOMEBREW_TAP_PAT` — step 6; push branches + open PRs in
-  `huytrinhx/homebrew-tap`.
-  **Setup (one-time, manual):** generate a fine-grained PAT at
-  https://github.com/settings/personal-access-tokens, scope:
-  resource owner `huytrinhx`, repo access only `huytrinhx/homebrew-tap`,
-  permissions `contents:write` + `pull-requests:write` +
-  `metadata:read`, 1-year expiry. Paste into the watch-cli repo at
-  Settings → Secrets and variables → Actions. Without this, the
-  `bump-tap` job fails and Homebrew users do not get an auto-bump
-  PR — the GH Release and npm publish are unaffected.
 - `GITHUB_TOKEN` (built-in) is sufficient for steps 1–4.
 
 ---
@@ -336,17 +319,18 @@ locally still works. Only `curl | bash` uses the release tarball.
 
 ## What the implementer must do before tagging v1.0.0
 
-1. All five foundation specs merged and signed off:
-   `output-schema.md`, `exit-codes.md`, `offline-mode.md`,
-   `releases.md`, `homebrew.md`.
-2. Homebrew tap published. `brew install huytrinhx/tap/watch-cli`
-   succeeds on a fresh macOS machine ([`homebrew.md`](homebrew.md)).
-3. `@huytrinhx/watch-cli-mcp` is on npm at a version matching
-   watch-cli (MCP v1.0.0 ships when watch-cli v1.0.0 ships).
-4. CI green on `main` for 30 days. No skipped jobs, no
+This was upstream's pre-1.0 checklist; this fork's `v1.0.0` shipped
+without it (see the "Cutoff to v1.0.0" note above). Kept as
+historical context and as a template for the *next* major bump:
+
+1. Foundation specs merged and signed off: `output-schema.md`,
+   `exit-codes.md`, `offline-mode.md`, `releases.md`.
+2. `@huytrinhx/watch-cli-mcp` is on npm at a version matching
+   watch-cli.
+3. CI green on `main` for 30 days. No skipped jobs, no
    `continue-on-error: true` on any required step.
-5. No open issue tagged `schema-breaking` or `exit-code-breaking`.
-6. v1.0.0 release notes call out the stability-promise from
+4. No open issue tagged `schema-breaking` or `exit-code-breaking`.
+5. The release notes call out the stability-promise from
    `output-schema.md`: "Output schema is now frozen at v1. Any
    future incompatible change ships as v2 with a one-major-version
    `--format json-v1` compatibility flag."
@@ -371,10 +355,7 @@ The implementer must verify end to end before declaring done:
    form. Resolves to v0.3.0.
 5. **MCP server publish.** `@huytrinhx/watch-cli-mcp@0.3.0` is on npm,
    `bin/watch-cli-mcp` works via `npx`.
-6. **Homebrew bump.** A PR opens against `huytrinhx/homebrew-tap`
-   titled `watch-cli 0.3.0`; merging makes `brew upgrade watch-cli`
-   work. Full Homebrew test plan in [`homebrew.md`](homebrew.md).
-7. **Version mismatch.** Push a tag `v0.3.1` without bumping
+6. **Version mismatch.** Push a tag `v0.3.1` without bumping
    `lib/version.sh`. The workflow fails at step 2 with the
    documented error; no release is created.
 
@@ -384,7 +365,5 @@ The implementer must verify end to end before declaring done:
 
 - Output schema this release ships with:
   [`output-schema.md`](output-schema.md).
-- Homebrew tap and per-release formula bump:
-  [`homebrew.md`](homebrew.md).
 - Exit codes the installer and the release workflow exit with on
   failure: [`exit-codes.md`](exit-codes.md).

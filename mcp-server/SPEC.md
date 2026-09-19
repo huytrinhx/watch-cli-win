@@ -229,7 +229,6 @@ canonical text; the implementer copies them into the README verbatim.
 
 Config path:
 
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 

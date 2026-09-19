@@ -14,7 +14,7 @@
 # against that header at implementation time (the `etag` returned by a
 # HEAD request to the resolve URL). Upstream publishes a SHA1 on the
 # whisper.cpp models page; watch-cli pins SHA256 to match the rest of
-# the toolchain (`shasum -a 256` is the default on macOS).
+# the toolchain.
 #
 # Idempotent: only load once per shell.
 [[ -n "${WATCH_CLI_MODEL_CHECKSUMS_LOADED:-}" ]] && return 0
