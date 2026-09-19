@@ -29,13 +29,16 @@
 [[ -n "${WATCH_ARCHIVE_LOADED:-}" ]] && return 0
 export WATCH_ARCHIVE_LOADED=1
 
+# shellcheck source=./hash.sh
+source "$(dirname "${BASH_SOURCE[0]}")/hash.sh"
+
 # WATCH_ARCHIVE_DIR is resolved through the normal env chain (process env →
 # ./.env → ~/.config/watch-cli/env) by lib/env.sh, so a user overrides it the
 # same way they set any other watch-cli setting.
 export WATCH_ARCHIVE_DIR="${WATCH_ARCHIVE_DIR:-$HOME/.watch-cli/archive}"
 
 watch_archive_id() {
-  printf '%s' "$1" | shasum | cut -c1-12
+  printf '%s' "$1" | watch_hash_sha1_stdin | cut -c1-12
 }
 
 watch_archive_dir_for() {

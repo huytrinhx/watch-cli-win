@@ -49,6 +49,8 @@ SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 # shellcheck source=../lib/audio-routing.sh
 source "$ROOT_DIR/lib/audio-routing.sh"
+# shellcheck source=../lib/hash.sh
+source "$ROOT_DIR/lib/hash.sh"
 
 INPUT=""
 LANG=""
@@ -167,7 +169,7 @@ fi
 # Always normalize to mono 16kHz mp3 — the API backends accept it, and
 # this keeps payloads under 25MB even for ~30min sources. whisper.cpp
 # accepts mp3 in current builds too.
-HASH="$(echo -n "$INPUT" | shasum | cut -c1-10)"
+HASH="$(echo -n "$INPUT" | watch_hash_sha1_stdin | cut -c1-10)"
 AUDIO="/tmp/transcribe_${HASH}.mp3"
 
 if [[ ! -s "$AUDIO" ]]; then

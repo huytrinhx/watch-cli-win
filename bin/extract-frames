@@ -31,6 +31,8 @@ SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 # shellcheck source=../lib/version.sh
 source "$ROOT_DIR/lib/version.sh"
+# shellcheck source=../lib/hash.sh
+source "$ROOT_DIR/lib/hash.sh"
 
 VIDEO=""
 COUNT="8"
@@ -85,7 +87,7 @@ done
 if [[ -n "$OUTDIR_ARG" ]]; then
   OUTDIR="$OUTDIR_ARG"
 else
-  HASH="$(echo -n "$VIDEO" | shasum | cut -c1-8)"
+  HASH="$(echo -n "$VIDEO" | watch_hash_sha1_stdin | cut -c1-8)"
   BASE="$(basename "$VIDEO" .mp4)"
   OUTDIR="/tmp/frames_${BASE}_${HASH}"
 fi

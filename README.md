@@ -142,6 +142,27 @@ On Debian/Ubuntu:
 sudo apt install yt-dlp ffmpeg jq python3 curl
 ```
 
+### Windows (via WSL2)
+
+watch-cli is a Bash CLI — on Windows it runs inside **WSL2**, not directly
+in PowerShell or cmd.exe:
+
+```powershell
+wsl --install          # from an elevated PowerShell, then reboot if prompted
+```
+
+Open the **Ubuntu** app from the Start menu and install the same way as
+Linux, from that terminal:
+
+```bash
+sudo apt install yt-dlp ffmpeg jq python3 curl
+curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+```
+
+Always run `watch <url>` from that Ubuntu/WSL terminal, not from
+PowerShell or cmd.exe — those shells can't execute Bash scripts. See
+[docs/platforms.md](docs/platforms.md#windows) for details and gotchas.
+
 ### Optional install flags
 
 ```bash

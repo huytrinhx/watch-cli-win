@@ -127,3 +127,78 @@ jobs:
 
       - name: Output schema test
         run: bash tests/test-output-schema.sh
+
+  # Windows support is WSL2-only (see docs/platforms.md#windows) — there is
+  # no native PowerShell/cmd.exe path. This job proves the scripts actually
+  # execute inside WSL2 on a Windows runner, rather than just trusting that
+  # "WSL is Ubuntu" holds in practice. Scoped to help/usage smoke checks
+  # only (not the full tests/test-output-schema.sh) because that suite
+  # asserts the executable bit on bin/watch, which is unreliable on a
+  # checkout living on the Windows-side (DrvFs) filesystem that WSL mounts
+  # at /mnt/*; every check here instead invokes scripts via `bash <path>`
+  # so it doesn't depend on that bit.
+  smoke-windows-wsl:
+    name: smoke (windows-wsl)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up WSL (Ubuntu)
+        uses: Vampire/setup-wsl@v3
+        with:
+          distribution: Ubuntu-22.04
+
+      - name: Install deps
+        shell: wsl-bash {0}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yt-dlp ffmpeg jq curl python3
+
+      - name: Verify required binaries
+        shell: wsl-bash {0}
+        run: |
+          for b in yt-dlp ffmpeg ffprobe jq curl python3 bash; do
+            command -v "$b" >/dev/null 2>&1 || { echo "missing $b"; exit 1; }
+          done
+
+      - name: Bash syntax check
+        shell: wsl-bash {0}
+        run: bash -n bin/watch bin/dl-video bin/extract-frames bin/transcribe bin/audio-q bin/models bin/watch-archive install.sh
+
+      - name: Smoke — watch --help
+        shell: wsl-bash {0}
+        run: bash bin/watch --help
+
+      - name: Smoke — transcribe --help
+        shell: wsl-bash {0}
+        run: bash bin/transcribe --help
+
+      - name: Smoke — extract-frames --help
+        shell: wsl-bash {0}
+        run: bash bin/extract-frames --help
+
+      - name: Smoke — dl-video --help
+        shell: wsl-bash {0}
+        run: bash bin/dl-video --help
+
+      - name: Smoke — audio-q --help
+        shell: wsl-bash {0}
+        run: bash bin/audio-q --help
+
+      - name: Smoke — models --help
+        shell: wsl-bash {0}
+        run: bash bin/models --help
+
+      - name: Negative — watch with no args must exit 64
+        shell: wsl-bash {0}
+        run: |
+          set +e
+          bash bin/watch
+          rc=$?
+          set -e
+          if [[ $rc -ne 64 ]]; then
+            echo "expected exit 64 from 'watch' with no args, got $rc" >&2
+            exit 1
+          fi
+          echo "OK: rc=$rc"

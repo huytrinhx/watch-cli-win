@@ -21,12 +21,34 @@ covers the ones we have explicitly tested and the cookie tier they need.
 
 Legend: ✅ works · ❌ blocked · ⚠️ partial · — not needed
 
+## Windows
+
+watch-cli is a Bash CLI and runs on Windows only inside **WSL2** — there is
+no native PowerShell/cmd.exe support. Install WSL2 (`wsl --install` from an
+elevated PowerShell, reboot if prompted, then open the **Ubuntu** app from
+the Start menu), then follow the Linux install instructions in the
+[README](../README.md#install) from that Ubuntu terminal.
+
+Two things that trip people up:
+
+- Run `watch` from the Ubuntu/WSL terminal, not from PowerShell or
+  cmd.exe — those shells cannot execute Bash scripts directly.
+- Install and run watch-cli from inside the WSL filesystem (`~/.watch-cli`,
+  the default), not from a Windows drive mounted at `/mnt/c/...`. Files
+  under `/mnt/*` go through a Windows/Linux translation layer (DrvFs) that
+  is slower and can silently drop the executable bit `chmod +x` sets,
+  which breaks the installer's symlink step.
+
+`install.sh` detects a bare Git Bash/MSYS/Cygwin shell (i.e. Windows
+without WSL) and refuses to run, printing the WSL2 setup steps instead of
+limping through a half-working install.
+
 ## Tested versions
 
 This matrix was last verified against:
 
 - `yt-dlp` 2024.12.x (any recent build is fine)
-- macOS 14, Linux Debian 12
+- macOS 14, Linux Debian 12, Windows 11 (WSL2, Ubuntu 22.04/24.04)
 
 If a platform fails on your machine, first run:
 

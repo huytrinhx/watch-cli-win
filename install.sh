@@ -87,6 +87,29 @@ done
 echo "watch-cli installer"
 echo "==================="
 
+# ── OS guard ──
+# watch-cli is Bash-only. On Windows the supported path is WSL2 (Ubuntu),
+# where this script behaves exactly like a native Linux install — see
+# docs/platforms.md#windows. Git Bash/MSYS/Cygwin put POSIX tools next to
+# native Win32 binaries in ways this project is not tested against, so fail
+# loud with a redirect instead of limping through a half-working install.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    red "watch-cli does not support Git Bash/MSYS/Cygwin directly."
+    echo
+    echo "On Windows, install WSL2 and run this installer from inside it:"
+    echo "  1. wsl --install        (from an elevated PowerShell, then reboot if prompted)"
+    echo "  2. Open the 'Ubuntu' app from the Start menu"
+    echo "  3. curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash"
+    echo
+    echo "See docs/platforms.md#windows for details."
+    exit 1
+    ;;
+esac
+if [[ "$(uname -s)" == "Linux" ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+  dim "Detected WSL — installing as a native Linux environment."
+fi
+
 # ── Check deps ──
 missing=()
 for cmd in yt-dlp ffmpeg ffprobe jq curl python3; do
@@ -126,6 +149,22 @@ _resolve_tarball_url() {
   fi
 }
 
+# Portable SHA256 of a file: prefer GNU coreutils' sha256sum (always present
+# on Linux/WSL2), fall back to macOS's shasum, then to python3. install.sh
+# must stay self-contained (it's often piped straight from curl with no
+# sibling lib/ files on disk yet), so this is inlined rather than sourced
+# from lib/hash.sh.
+_sha256_file() {
+  local file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  else
+    python3 -c 'import sys, hashlib; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$file"
+  fi
+}
+
 _resolve_checksum_url() {
   if [[ -n "$WATCH_CLI_VERSION" ]]; then
     echo "$REPO_URL/releases/download/v${WATCH_CLI_VERSION}/watch-cli.tar.gz.sha256"
@@ -154,7 +193,7 @@ _install_from_tarball() {
   # than a bootstrap fallback.
   if expected="$(curl -fsSL "$checksum_url" 2>/dev/null | awk '{print $1}')" \
      && [[ -n "$expected" ]]; then
-    actual="$(shasum -a 256 "$tarball_path" | awk '{print $1}')"
+    actual="$(_sha256_file "$tarball_path")"
     if [[ "$actual" != "$expected" ]]; then
       red "[install] error: tarball-checksum-mismatch tag=tarball-checksum-mismatch"
       echo "  expected: $expected"
@@ -349,7 +388,7 @@ if (( WITH_LOCAL )); then
   # 4. SHA256-verify against the pinned hash. Mismatch deletes the
   # file so a second `--with-local` run gets a clean download.
   yellow "Verifying SHA256…"
-  ACTUAL_SHA="$(shasum -a 256 "$MODEL_FILE" | awk '{print $1}')"
+  ACTUAL_SHA="$(_sha256_file "$MODEL_FILE")"
   if [[ "$ACTUAL_SHA" != "$MODEL_SHA256" ]]; then
     red "[--with-local] error: model-checksum-mismatch"
     echo "  expected: $MODEL_SHA256"

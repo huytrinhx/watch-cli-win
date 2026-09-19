@@ -28,6 +28,8 @@ SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 # shellcheck source=../lib/version.sh
 source "$ROOT_DIR/lib/version.sh"
+# shellcheck source=../lib/hash.sh
+source "$ROOT_DIR/lib/hash.sh"
 
 URL=""
 OUTDIR="/tmp/dl-video"
@@ -75,7 +77,7 @@ fi
 mkdir -p "$OUTDIR"
 
 # Idempotent cache: same URL → same output file.
-HASH="$(echo -n "$URL" | shasum | cut -c1-12)"
+HASH="$(echo -n "$URL" | watch_hash_sha1_stdin | cut -c1-12)"
 OUT="$OUTDIR/$HASH.mp4"
 if [[ -s "$OUT" ]]; then
   echo "$OUT"

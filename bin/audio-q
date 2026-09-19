@@ -25,6 +25,8 @@ SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
 # shellcheck source=../lib/env.sh
 source "$ROOT_DIR/lib/env.sh"
+# shellcheck source=../lib/hash.sh
+source "$ROOT_DIR/lib/hash.sh"
 
 INPUT=""
 QUESTION=""
@@ -86,7 +88,7 @@ for dep in ffmpeg ffprobe jq curl base64; do
   fi
 done
 
-HASH="$(echo -n "$INPUT" | shasum | cut -c1-10)"
+HASH="$(echo -n "$INPUT" | watch_hash_sha1_stdin | cut -c1-10)"
 AUDIO="/tmp/audioq_${HASH}.mp3"
 if [[ ! -s "$AUDIO" ]]; then
   if ! ffmpeg -hide_banner -loglevel error -y -i "$INPUT" \
