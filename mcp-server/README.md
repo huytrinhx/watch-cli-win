@@ -1,6 +1,6 @@
-# @sonpiaz/watch-cli-mcp
+# @huytrinhx/watch-cli-mcp
 
-MCP (Model Context Protocol) stdio server that exposes [watch-cli](https://github.com/sonpiaz/watch-cli) as a callable tool.
+MCP (Model Context Protocol) stdio server that exposes [watch-cli](https://github.com/huytrinhx/watch-cli-win) as a callable tool.
 
 > Watch any social video → get an architecture diagram, working component, runnable notebook, or step-by-step cheat sheet — automatically.
 
@@ -12,7 +12,7 @@ A single MCP server reaches every MCP-capable agent runtime — Claude Desktop, 
 - The `watch` CLI installed and on `PATH`. Install with:
 
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/sonpiaz/watch-cli/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/huytrinhx/watch-cli-win/main/install.sh | bash
   ```
 
 The MCP server shells out to `watch`; it does not bundle the CLI.
@@ -20,13 +20,13 @@ The MCP server shells out to `watch`; it does not bundle the CLI.
 ## Install
 
 ```bash
-npm install -g @sonpiaz/watch-cli-mcp
+npm install -g @huytrinhx/watch-cli-mcp
 ```
 
 Or run on demand via `npx`:
 
 ```bash
-npx -y @sonpiaz/watch-cli-mcp
+npx -y @huytrinhx/watch-cli-mcp
 ```
 
 The binary is `watch-cli-mcp`. It reads JSON-RPC on stdin, writes JSON-RPC on stdout, and logs to stderr.
@@ -58,7 +58,7 @@ One tool is registered: `watch`.
 }
 ```
 
-**Output:** the v1 JSON object from [`docs/output-schema.md`](https://github.com/sonpiaz/watch-cli/blob/main/docs/output-schema.md), passed through verbatim. Read the schema for the field reference.
+**Output:** the v1 JSON object from [`docs/output-schema.md`](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/output-schema.md), passed through verbatim. Read the schema for the field reference.
 
 ## Error mapping
 
@@ -91,7 +91,7 @@ Merge into the existing `mcpServers` object:
   "mcpServers": {
     "watch-cli": {
       "command": "npx",
-      "args": ["-y", "@sonpiaz/watch-cli-mcp"]
+      "args": ["-y", "@huytrinhx/watch-cli-mcp"]
     }
   }
 }
@@ -108,7 +108,7 @@ Config path: `.cursor/mcp.json` (project-scoped) or `~/.cursor/mcp.json` (user-g
   "mcpServers": {
     "watch-cli": {
       "command": "npx",
-      "args": ["-y", "@sonpiaz/watch-cli-mcp"]
+      "args": ["-y", "@huytrinhx/watch-cli-mcp"]
     }
   }
 }
@@ -125,7 +125,7 @@ Any MCP-capable agent that accepts an `npx` command will work with the snippet a
 ## Build from source
 
 ```bash
-git clone https://github.com/sonpiaz/watch-cli
+git clone https://github.com/huytrinhx/watch-cli-win
 cd watch-cli/mcp-server
 npm install
 npm run build
@@ -134,4 +134,4 @@ node dist/index.js
 
 ## License
 
-MIT. © 2026 Son Piaz.
+MIT. © 2026 Son Piaz (Nguyễn Tùng Sơn) for the original [watch-cli](https://github.com/sonpiaz/watch-cli). This fork © 2026 huytrinhx.

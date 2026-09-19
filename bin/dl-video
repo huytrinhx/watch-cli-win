@@ -205,7 +205,7 @@ Two ways to fix:
      save it somewhere WSL can read (e.g. /mnt/c/Users/<you>/Downloads/),
      then:
        watch-cli <url> --cookies /mnt/c/Users/<you>/Downloads/cookies.txt
-     See https://github.com/sonpiaz/watch-cli/blob/main/docs/cookies.md#windows-wsl2
+     See https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md#windows-wsl2
 
   3. Try a public URL — most YouTube, TikTok, and Reddit videos
      work without cookies.
@@ -222,7 +222,7 @@ Three ways to fix:
 
   2. Export cookies.txt (Netscape format) and pass:
        watch-cli <url> --cookies ~/path/to/cookies.txt
-     See https://github.com/sonpiaz/watch-cli/blob/main/docs/cookies.md
+     See https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md
 
   3. Try a public URL — most YouTube, TikTok, and Reddit videos
      work without cookies.

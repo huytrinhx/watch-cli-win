@@ -56,7 +56,7 @@ are required for the file to be valid in all three target platforms.
 |---|---|---|
 | `name` | string | Always `watch-cli`. Lowercase, hyphenated. Matches the project name from `BRANDING.md`. |
 | `description` | string | The locked pitch from `BRANDING.md` verbatim, or a tight variant that keeps the *video → concrete artifact* mapping. Single line. ≤ 350 characters so it renders cleanly in agent UIs. |
-| `homepage` | string | `https://github.com/sonpiaz/watch-cli`. |
+| `homepage` | string | `https://github.com/huytrinhx/watch-cli-win`. |
 
 ---
 
@@ -75,7 +75,7 @@ metadata:
     install:
       - id: curl-install
         kind: shell
-        command: "curl -fsSL https://raw.githubusercontent.com/sonpiaz/watch-cli/main/install.sh | bash"
+        command: "curl -fsSL https://raw.githubusercontent.com/huytrinhx/watch-cli-win/main/install.sh | bash"
         bins:
           - watch
         label: "Install watch-cli (curl)"

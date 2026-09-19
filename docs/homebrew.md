@@ -12,7 +12,7 @@ Mac developers — watch-cli's primary audience — reach for `brew
 install` first. The tool's dependencies (`yt-dlp`, `ffmpeg`, `jq`)
 are already on Homebrew. Asking the same user to curl an arbitrary
 `install.sh` for the wrapper is friction. A personal tap
-(`sonpiaz/homebrew-tap`) is roughly 10× less work than upstreaming
+(`huytrinhx/homebrew-tap`) is roughly 10× less work than upstreaming
 to homebrew-core: no review queue, no popularity threshold, no audit
 cycle, full control of release cadence. Homebrew-core submission is
 explicitly out of scope for Phase 4.
@@ -21,23 +21,23 @@ explicitly out of scope for Phase 4.
 
 ## Tap repo
 
-Name: **`sonpiaz/homebrew-tap`**. New public repo, implementer
+Name: **`huytrinhx/homebrew-tap`**. New public repo, implementer
 creates as part of Phase 4:
 
 ```bash
-gh repo create sonpiaz/homebrew-tap \
+gh repo create huytrinhx/homebrew-tap \
   --public \
-  --description "Homebrew formulas for Son Piaz projects"
+  --description "Homebrew formulas for huytrinhx projects"
 ```
 
-`brew tap sonpiaz/tap` resolves to `github.com/sonpiaz/homebrew-tap`
+`brew tap huytrinhx/tap` resolves to `github.com/huytrinhx/homebrew-tap`
 by Homebrew convention. The `homebrew-` prefix is mandatory in the
 repo name and must not appear in the user-facing tap name.
 
 Layout:
 
 ```
-sonpiaz/homebrew-tap/
+huytrinhx/homebrew-tap/
 ├── Formula/
 │   └── watch-cli.rb
 └── README.md
@@ -61,8 +61,8 @@ the real formula.
 | Field | Value |
 |---|---|
 | `desc` | `"Turn any social video into an architecture diagram or working component"` (71 chars). Homebrew enforces `desc` under 80 chars via `brew style`. Tightened variant of the locked pitch in [`BRANDING.md`](../BRANDING.md) — preserves the U2 "video → concrete artifact" mapping (the must-keep half per BRANDING) while fitting the audit. |
-| `homepage` | `"https://github.com/sonpiaz/watch-cli"` |
-| `url` | `"https://github.com/sonpiaz/watch-cli/releases/download/v#{version}/watch-cli.tar.gz"` — `v#{version}` interpolation lets the auto-bump edit only `version` and `sha256`. |
+| `homepage` | `"https://github.com/huytrinhx/watch-cli-win"` |
+| `url` | `"https://github.com/huytrinhx/watch-cli-win/releases/download/v#{version}/watch-cli.tar.gz"` — `v#{version}` interpolation lets the auto-bump edit only `version` and `sha256`. |
 | `sha256` | `"<filled by release automation>"` — 64-hex tarball SHA, set by the bump PR. |
 | `version` | `"0.3.0"` — first tap-tracked version, updated by the auto-bump PR. |
 | `license` | `"MIT"` |
@@ -147,8 +147,8 @@ The implementer writes the real file; this sketch shows the shape.
 ```ruby
 class WatchCli < Formula
   desc "Turn any social video into an architecture diagram or working component"
-  homepage "https://github.com/sonpiaz/watch-cli"
-  url "https://github.com/sonpiaz/watch-cli/releases/download/v#{version}/watch-cli.tar.gz"
+  homepage "https://github.com/huytrinhx/watch-cli-win"
+  url "https://github.com/huytrinhx/watch-cli-win/releases/download/v#{version}/watch-cli.tar.gz"
   sha256 "<filled by release automation>"
   version "0.3.0"
   license "MIT"
@@ -186,7 +186,7 @@ every `v*` tag push. The bump is a separate job in
 `.github/workflows/release.yml` after tarball + npm publish.
 
 After the GH Release is created and the tarball SHA256 is known, the
-job checks out `sonpiaz/homebrew-tap` via `HOMEBREW_TAP_PAT`, edits
+job checks out `huytrinhx/homebrew-tap` via `HOMEBREW_TAP_PAT`, edits
 only `version` and `sha256` (the `url` resolves via `v#{version}`
 interpolation), and opens a PR:
 
@@ -200,7 +200,7 @@ sed -i.bak \
 rm Formula/watch-cli.rb.bak
 git commit -am "watch-cli ${VERSION}"
 git push origin "bump/watch-cli-${VERSION}"
-gh pr create --repo sonpiaz/homebrew-tap \
+gh pr create --repo huytrinhx/homebrew-tap \
   --title "watch-cli ${VERSION}" \
   --body "Automated bump from watch-cli v${VERSION} release."
 ```
@@ -211,8 +211,8 @@ accidental breakage before users `brew upgrade`.
 
 ### Required secret: `HOMEBREW_TAP_PAT`
 
-Fine-grained PAT scoped narrowly: resource owner `sonpiaz`,
-repository access only `sonpiaz/homebrew-tap`, repository permissions
+Fine-grained PAT scoped narrowly: resource owner `huytrinhx`,
+repository access only `huytrinhx/homebrew-tap`, repository permissions
 `Contents` read+write + `Pull requests` read+write + `Metadata`
 read-only (auto-included), no account permissions. Add to the
 **watch-cli** repo's Actions secrets as `HOMEBREW_TAP_PAT`. Recommend
@@ -253,11 +253,11 @@ one-liner:
 
 ```bash
 # macOS — Homebrew (recommended)
-brew tap sonpiaz/tap
+brew tap huytrinhx/tap
 brew install watch-cli
 
 # Any OS — curl
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 ```
 
 Once v0.3.0 ships and the tap is verified, the curl form stays
@@ -284,9 +284,9 @@ The implementer must verify on a clean macOS machine (or fresh
 Homebrew in a container) before declaring the tap published. Any
 failure blocks the v0.3.0 ship.
 
-1. **Tap discovery.** `brew tap sonpiaz/tap` succeeds, no warnings.
-2. **Formula audit.** `brew audit --strict --online sonpiaz/tap`
-   and `brew style sonpiaz/tap` pass with no errors. (`brew style`
+1. **Tap discovery.** `brew tap huytrinhx/tap` succeeds, no warnings.
+2. **Formula audit.** `brew audit --strict --online huytrinhx/tap`
+   and `brew style huytrinhx/tap` pass with no errors. (`brew style`
    enforces `desc` length and Ruby formatting.)
 3. **Install.** `brew install watch-cli` completes. Deps pulled
    automatically. Tarball download matches the formula SHA256.
@@ -303,9 +303,9 @@ failure blocks the v0.3.0 ship.
    < 2 seconds.
 8. **Upgrade.** Hand-edit the tap formula to `0.3.1-test` against a
    synthetic tarball on a branch; `brew upgrade
-   sonpiaz/tap/watch-cli` against the branch tap resolves cleanly.
+   huytrinhx/tap/watch-cli` against the branch tap resolves cleanly.
 9. **Clean uninstall.** `brew uninstall watch-cli` then `brew untap
-   sonpiaz/tap`. After both: `which watch` returns nothing,
+   huytrinhx/tap`. After both: `which watch` returns nothing,
    `$(brew --prefix)/share/watch-cli/` is gone,
    `~/.config/watch-cli/env` untouched.
 

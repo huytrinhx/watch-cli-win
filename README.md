@@ -1,6 +1,6 @@
 # watch-cli
 
-![CI](https://github.com/sonpiaz/watch-cli/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/huytrinhx/watch-cli-win/actions/workflows/ci.yml/badge.svg)
 
 **Watch any social video → get an architecture diagram, working component, runnable notebook, or step-by-step cheat sheet — automatically.**
 
@@ -94,11 +94,11 @@ signup is enough to run the full pipeline end-to-end before you spend a cent.
 
 ```bash
 # macOS — Homebrew (recommended)
-brew tap sonpiaz/tap
+brew tap huytrinhx/tap
 brew install watch-cli
 
 # Any OS — curl
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 ```
 
 > The curl one-liner auto-falls back to `git clone` of `main` if no
@@ -109,7 +109,7 @@ curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install
 If you use Claude Code, install watch-cli as a skill:
 
 ```
-/plugin marketplace add sonpiaz/watch-cli
+/plugin marketplace add huytrinhx/watch-cli-win
 /plugin install watch-cli@watch-cli
 ```
 
@@ -118,14 +118,14 @@ The agent then picks up `watch <url>` as a first-class command.
 Pin a specific version:
 
 ```bash
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/v0.3.4/install.sh \
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
   | WATCH_CLI_VERSION=0.3.4 bash
 ```
 
 Or from a clone:
 
 ```bash
-git clone https://github.com/sonpiaz/watch-cli ~/.watch-cli
+git clone https://github.com/huytrinhx/watch-cli-win ~/.watch-cli
 cd ~/.watch-cli && ./install.sh
 ```
 
@@ -156,7 +156,7 @@ Linux, from that terminal:
 
 ```bash
 sudo apt install yt-dlp ffmpeg jq python3 curl
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 ```
 
 Always run `watch <url>` from that Ubuntu/WSL terminal, not from
@@ -173,7 +173,7 @@ PowerShell or cmd.exe — those shells can't execute Bash scripts. See
 - `--with-skill` copies the portable `SKILL.md` into `~/.claude/skills/watch-cli/`
   so Claude Code picks up watch-cli as a skill on next start. The same file
   works in OpenClaw and hermes-agent — see [`SKILL.md`](SKILL.md).
-- `--with-mcp` prints the manual install line for [`@sonpiaz/watch-cli-mcp`](mcp-server/),
+- `--with-mcp` prints the manual install line for [`@huytrinhx/watch-cli-mcp`](mcp-server/),
   the MCP stdio server that exposes watch-cli to Claude Desktop, Cursor, Cline,
   Continue.dev, Windsurf, Zed, and any other MCP-capable client. The flag will
   auto-install once the package is published to npm.
@@ -369,7 +369,7 @@ Each step is a primitive. None of them needs a vision LLM.
 ## Show what you build
 
 Built something cool from a video? Drop it in
-[Discussions](https://github.com/sonpiaz/watch-cli/discussions) under
+[Discussions](https://github.com/huytrinhx/watch-cli-win/discussions) under
 **Show and tell**. Post the source URL, the prompt you used, and your
 artifact. Curated highlights make it back into the README.
 
@@ -434,4 +434,4 @@ path is available — see `.env.example`.
 
 ## License
 
-MIT. © 2026 Son Piaz.
+MIT. © 2026 Son Piaz (Nguyễn Tùng Sơn) for the original [watch-cli](https://github.com/sonpiaz/watch-cli). This fork © 2026 huytrinhx.

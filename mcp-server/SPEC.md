@@ -36,14 +36,14 @@ downstream consumer parses one shape regardless of channel
 
 Two options considered:
 
-- **(a) Standalone npm package** `@sonpiaz/watch-cli-mcp` — separate
+- **(a) Standalone npm package** `@huytrinhx/watch-cli-mcp` — separate
   TypeScript codebase under `mcp-server/`, depends on
   `@modelcontextprotocol/sdk`. Independent semver. CLI-only users never
   install the MCP package.
 - **(b) Built-in subcommand** `watch --mcp-serve` — the existing Bash
   script grows an MCP mode. Single binary, no npm dep for CLI-only.
 
-**Locked choice: (a) standalone npm package `@sonpiaz/watch-cli-mcp`.**
+**Locked choice: (a) standalone npm package `@huytrinhx/watch-cli-mcp`.**
 
 Justification:
 
@@ -84,7 +84,7 @@ where the consumer-facing README needs a "Run as MCP server" line.
 
 | Field | Value |
 |---|---|
-| `name` | `@sonpiaz/watch-cli-mcp` |
+| `name` | `@huytrinhx/watch-cli-mcp` |
 | `version` | Mirrors `bin/watch` `VERSION`. First cut: `0.2.0`. |
 | `description` | Locked pitch from `BRANDING.md`, ≤ 350 chars, single line. |
 | `bin.watch-cli-mcp` | `./dist/index.js` |
@@ -206,7 +206,7 @@ are the ones exposed by `@modelcontextprotocol/sdk`.
 
 ## Lifecycle
 
-- Starts when invoked via `npx @sonpiaz/watch-cli-mcp` (or local
+- Starts when invoked via `npx @huytrinhx/watch-cli-mcp` (or local
   `dist/index.js` after `npm install -g`).
 - Constructs an `StdioServerTransport`, registers the `watch` tool
   plus the SDK's `tools/list` and `tools/call` handlers.
@@ -240,7 +240,7 @@ Snippet (merge into the existing `mcpServers` object):
   "mcpServers": {
     "watch-cli": {
       "command": "npx",
-      "args": ["-y", "@sonpiaz/watch-cli-mcp"]
+      "args": ["-y", "@huytrinhx/watch-cli-mcp"]
     }
   }
 }
@@ -264,7 +264,7 @@ future release, only the README updates; the server code does not.
 
 The implementer must verify all of the following before publishing.
 
-1. **Boot smoke.** `npx @sonpiaz/watch-cli-mcp` starts, prints nothing
+1. **Boot smoke.** `npx @huytrinhx/watch-cli-mcp` starts, prints nothing
    to stdout, accepts an MCP `initialize` request, and responds with
    the SDK's capabilities object.
 2. **`tools/list` returns `watch`.** Exactly one tool with the right
@@ -283,7 +283,7 @@ The implementer must verify all of the following before publishing.
    error code `InternalError` and message containing
    `tag=missing-dep:yt-dlp`.
 7. **Manual mcporter integration.**
-   `mcporter call --stdio "npx -y @sonpiaz/watch-cli-mcp" watch.watch url=<known-good-yt-url>`
+   `mcporter call --stdio "npx -y @huytrinhx/watch-cli-mcp" watch.watch url=<known-good-yt-url>`
    returns the v1 JSON payload.
 8. **Phase 1 regression.** Existing shell tests
    (`tests/test-output-schema.sh`, `tests/test-exit-codes.sh`) still

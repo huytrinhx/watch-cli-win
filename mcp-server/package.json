@@ -1,7 +1,7 @@
 {
-  "name": "@sonpiaz/watch-cli-mcp",
+  "name": "@huytrinhx/watch-cli-mcp",
   "version": "0.3.1",
-  "mcpName": "io.github.sonpiaz/watch-cli",
+  "mcpName": "io.github.huytrinhx/watch-cli-win",
   "description": "Watch any social video → get an architecture diagram, working component, runnable notebook, or step-by-step cheat sheet — automatically. MCP stdio server for watch-cli.",
   "type": "module",
   "main": "dist/index.js",
@@ -27,10 +27,10 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.5.0"
   },
-  "homepage": "https://github.com/sonpiaz/watch-cli",
+  "homepage": "https://github.com/huytrinhx/watch-cli-win",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonpiaz/watch-cli.git",
+    "url": "git+https://github.com/huytrinhx/watch-cli-win.git",
     "directory": "mcp-server"
   },
   "license": "MIT",

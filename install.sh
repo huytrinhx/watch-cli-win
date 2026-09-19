@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # watch-cli installer.
 # Usage:
-#   curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+#   curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 # or pin a version:
-#   curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/v0.3.4/install.sh \
+#   curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
 #     | WATCH_CLI_VERSION=0.3.4 bash
 # or, from a clone:
 #   ./install.sh
@@ -20,7 +20,7 @@
 #   --with-skill   After install, drop SKILL.md into ~/.claude/skills/watch-cli/
 #                  so Claude Code picks up the watch-cli skill on next start.
 #   --with-mcp     Print the manual install hint for the MCP stdio server
-#                  (@sonpiaz/watch-cli-mcp on npm — not auto-installed yet).
+#                  (@huytrinhx/watch-cli-mcp on npm — not auto-installed yet).
 #   --with-local   Bootstrap the offline transcribe path: install
 #                  whisper.cpp (binary `whisper-cli`) and download the
 #                  default ggml model (~1.62 GB, SHA256-verified) into
@@ -29,7 +29,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/sonpiaz/watch-cli"
+REPO_URL="https://github.com/huytrinhx/watch-cli-win"
 INSTALL_DIR="${WATCH_CLI_HOME:-$HOME/.watch-cli}"
 BIN_LINK_DIR="${WATCH_CLI_BIN:-$HOME/.local/bin}"
 CLAUDE_SKILLS_DIR="${HOME}/.claude/skills"
@@ -51,8 +51,8 @@ usage() {
 watch-cli installer
 
 Usage:
-  curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
-  curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/v0.3.4/install.sh \
+  curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
+  curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
     | WATCH_CLI_VERSION=0.3.4 bash
   ./install.sh [--with-skill] [--with-mcp] [--with-local]
 
@@ -65,7 +65,7 @@ Flags:
   --with-skill   After install, copy SKILL.md into ~/.claude/skills/watch-cli/
                  so Claude Code picks up the watch-cli skill on next start.
   --with-mcp     Print the manual install hint for the MCP stdio server
-                 (@sonpiaz/watch-cli-mcp on npm — not auto-installed yet).
+                 (@huytrinhx/watch-cli-mcp on npm — not auto-installed yet).
   --with-local   Bootstrap the offline transcribe path: install whisper.cpp
                  (binary `whisper-cli`) and download the default ggml model
                  (~1.62 GB, SHA256-verified) into ~/.watch-cli/models/.
@@ -100,7 +100,7 @@ case "$(uname -s)" in
     echo "On Windows, install WSL2 and run this installer from inside it:"
     echo "  1. wsl --install        (from an elevated PowerShell, then reboot if prompted)"
     echo "  2. Open the 'Ubuntu' app from the Start menu"
-    echo "  3. curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash"
+    echo "  3. curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash"
     echo
     echo "See docs/platforms.md#windows for details."
     exit 1
@@ -261,8 +261,8 @@ fi
 # ── Optional: MCP stdio server hint ──
 if (( WITH_MCP )); then
   echo
-  yellow "MCP server install will be available once @sonpiaz/watch-cli-mcp is published to npm — install manually for now:"
-  echo "    npm install -g @sonpiaz/watch-cli-mcp"
+  yellow "MCP server install will be available once @huytrinhx/watch-cli-mcp is published to npm — install manually for now:"
+  echo "    npm install -g @huytrinhx/watch-cli-mcp"
   echo
 fi
 

@@ -7,11 +7,11 @@ name: release
 #
 # Required repo secrets (Settings → Secrets and variables → Actions):
 #   NPM_TOKEN          — automation token scoped to publish under
-#                        @sonpiaz/ on npm. Used by publish-mcp job.
+#                        @huytrinhx/ on npm. Used by publish-mcp job.
 #                        TODO(user): generate at npmjs.com/settings/
-#                        sonpiaz/tokens (type: Automation) and paste.
+#                        huytrinhx/tokens (type: Automation) and paste.
 #   HOMEBREW_TAP_PAT   — fine-grained PAT scoped to
-#                        sonpiaz/homebrew-tap only. Permissions:
+#                        huytrinhx/homebrew-tap only. Permissions:
 #                        contents:write + pull-requests:write +
 #                        metadata:read. 1-year expiry recommended.
 #                        TODO(user): generate at
@@ -114,7 +114,7 @@ jobs:
             echo
             echo "## Install"
             echo '```bash'
-            echo "brew tap sonpiaz/tap && brew install watch-cli            # macOS"
+            echo "brew tap huytrinhx/tap && brew install watch-cli            # macOS"
             echo "curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/install.sh | bash"
             echo "WATCH_CLI_VERSION=${VERSION} curl -fsSL <same-url> | bash  # pin"
             echo '```'
@@ -134,7 +134,7 @@ jobs:
             install.sh
 
   publish-mcp:
-    name: Publish @sonpiaz/watch-cli-mcp to npm
+    name: Publish @huytrinhx/watch-cli-mcp to npm
     needs: release
     runs-on: ubuntu-latest
     # npm granular tokens expire every 90 days and the release must not hang
@@ -181,7 +181,7 @@ jobs:
       - name: Checkout homebrew-tap
         uses: actions/checkout@v4
         with:
-          repository: sonpiaz/homebrew-tap
+          repository: huytrinhx/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_PAT }}
           path: homebrew-tap
 
@@ -230,12 +230,12 @@ jobs:
 
           Verify locally:
 
-              brew tap sonpiaz/tap
+              brew tap huytrinhx/tap
               brew install --build-from-source watch-cli
               brew test watch-cli
               watch --version  # expect: watch-cli v${VERSION}
           EOF
           gh pr create \
-            --repo sonpiaz/homebrew-tap \
+            --repo huytrinhx/homebrew-tap \
             --title "watch-cli ${VERSION}" \
             --body-file /tmp/pr-body.md

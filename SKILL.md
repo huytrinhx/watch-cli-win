@@ -1,7 +1,7 @@
 ---
 name: watch-cli
 description: "Watch any social video → get an architecture diagram, working component, runnable notebook, or step-by-step cheat sheet — automatically."
-homepage: https://github.com/sonpiaz/watch-cli
+homepage: https://github.com/huytrinhx/watch-cli-win
 metadata:
   openclaw:
     emoji: ""
@@ -11,13 +11,13 @@ metadata:
     install:
       - id: brew
         kind: brew
-        formula: sonpiaz/tap/watch-cli
+        formula: huytrinhx/tap/watch-cli
         bins:
           - watch
         label: "Install watch-cli (Homebrew)"
       - id: release-0.3.4
         kind: shell
-        command: "curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/v0.3.4/install.sh | WATCH_CLI_VERSION=0.3.4 bash"
+        command: "curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh | WATCH_CLI_VERSION=0.3.4 bash"
         bins:
           - watch
         label: "Install watch-cli v0.3.4 (pinned release, SHA256-verified tarball)"
@@ -45,7 +45,7 @@ If `watch` fails with `tag=download-auth` and you're running under WSL2 (`grep -
 Instead, with the user's explicit consent (never do this silently):
 
 - **If the user is signed into the target platform in Windows Firefox**, offer to export the cookies yourself: locate their profile under `/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/`, run `yt-dlp --cookies-from-browser "firefox:<that path>" --cookies <tmp file> --skip-download <url>` from the WSL shell, then call `watch <url> --cookies <tmp file>`, and delete the temporary cookies file afterward. This works because Firefox doesn't encrypt cookie values with Windows DPAPI the way Chrome/Edge do.
-- **If they use Chrome, Edge, or Brave instead**, this trick cannot work — those browsers encrypt cookies with Windows DPAPI, which a WSL/Linux process cannot decrypt even when pointed at the right profile path. Ask the user to export `cookies.txt` via a browser extension instead (see [docs/cookies.md#windows-wsl2](https://github.com/sonpiaz/watch-cli/blob/main/docs/cookies.md#windows-wsl2)) and pass it with `--cookies <file>`.
+- **If they use Chrome, Edge, or Brave instead**, this trick cannot work — those browsers encrypt cookies with Windows DPAPI, which a WSL/Linux process cannot decrypt even when pointed at the right profile path. Ask the user to export `cookies.txt` via a browser extension instead (see [docs/cookies.md#windows-wsl2](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/cookies.md#windows-wsl2)) and pass it with `--cookies <file>`.
 
 ## What you get back
 
@@ -61,16 +61,16 @@ A paper or research talk becomes a runnable notebook: one `.ipynb` implementing 
 
 A long tutorial becomes a step-by-step cheat sheet: numbered steps with copy-pasteable commands, video timestamps, verification per step, and only the troubleshooting the speaker actually discussed.
 
-Five copy-paste prompt templates live in [`prompts/`](https://github.com/sonpiaz/watch-cli/tree/main/prompts). Pick the one that matches the user's intent.
+Five copy-paste prompt templates live in [`prompts/`](https://github.com/huytrinhx/watch-cli-win/tree/main/prompts). Pick the one that matches the user's intent.
 
 ## Parse rules
 
-`watch` emits a versioned, agent-shaped payload. Both formats are documented in [`docs/output-schema.md`](https://github.com/sonpiaz/watch-cli/blob/main/docs/output-schema.md) and conform to the v1 contract — append-only, no renames, no type changes within v1.
+`watch` emits a versioned, agent-shaped payload. Both formats are documented in [`docs/output-schema.md`](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/output-schema.md) and conform to the v1 contract — append-only, no renames, no type changes within v1.
 
 - **Preferred: JSON mode.** `watch <url> --format json` emits one UTF-8 JSON object on stdout terminated by a newline. Parse it with a real JSON parser, switch on `obj.version`, read `obj.video_path`, `obj.duration_sec`, `obj.frame_paths` (array of absolute JPG paths, earliest-in-video first), `obj.transcript` (string or `null`), and `obj.exit_code`. Field reference is the single source of truth in `docs/output-schema.md`.
 - **Fallback: text mode.** Some agent hosts (Claude Code does this today) capture stdout as a free-text block. The leading line `WATCH_OUTPUT_VERSION: 1` is the version signal; everything below is labeled blocks (`VIDEO:`, `DURATION:`, `FRAMES:`, `TRANSCRIPT:`, `EXIT:`) per the same doc.
 - **Read frames as images, transcript as text.** Each path under `FRAMES:` (or each string in `frame_paths`) is an absolute path to a JPG on disk. Pass the path to the host's image-reading primitive. The transcript is plain UTF-8 text — no decoding needed.
-- **Exit-code behavior** is documented in [`docs/exit-codes.md`](https://github.com/sonpiaz/watch-cli/blob/main/docs/exit-codes.md). The partial-success case is the one to remember: on `exit 4` the frames are populated and the transcript is `null` — branch on the exit code and fall through to a frames-only consumption path instead of failing the run.
+- **Exit-code behavior** is documented in [`docs/exit-codes.md`](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/exit-codes.md). The partial-success case is the one to remember: on `exit 4` the frames are populated and the transcript is `null` — branch on the exit code and fall through to a frames-only consumption path instead of failing the run.
 
 ## Invocation
 
@@ -92,7 +92,7 @@ watch-archive get <id|url>           # reprint one record, transcript timestampe
 
 Reach for `watch-archive find` first when the question is "have I already seen something about X?" or "where in that video did they say Y?". It searches every stored transcript and answers with a timestamp, which is a seek position rather than a video to sit through again.
 
-Records are plain JSON, SRT and JPG on disk — `grep` and `jq` read them without this CLI, and `<id>/transcript.srt` loads in any video player. Layout in [`docs/archive.md`](https://github.com/sonpiaz/watch-cli/blob/main/docs/archive.md).
+Records are plain JSON, SRT and JPG on disk — `grep` and `jq` read them without this CLI, and `<id>/transcript.srt` loads in any video player. Layout in [`docs/archive.md`](https://github.com/huytrinhx/watch-cli-win/blob/main/docs/archive.md).
 
 Pass `--no-cache` only when the source itself has changed. A failed transcription is never stored, so a retry after an error always makes a real attempt.
 

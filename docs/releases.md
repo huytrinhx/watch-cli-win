@@ -4,7 +4,7 @@ This document is the source of truth for the watch-cli release
 contract: semver policy, where the version number lives, what a tag
 triggers, and how a consumer pins to a specific version. Every
 downstream consumer (`install.sh`, the Homebrew tap, the
-`@sonpiaz/watch-cli-mcp` npm package) reads a release artifact — a
+`@huytrinhx/watch-cli-mcp` npm package) reads a release artifact — a
 tag, a tarball, a SHA256 — and those artifacts have a stability
 promise.
 
@@ -14,7 +14,7 @@ promise.
 
 Every install today hits `main` HEAD. `install.sh` clones the repo
 from `main`, and the README's curl one-liner fetches
-`raw.githubusercontent.com/sonpiaz/watch-cli/main/install.sh`. One bad
+`raw.githubusercontent.com/huytrinhx/watch-cli-win/main/install.sh`. One bad
 commit on `main` therefore breaks every machine that runs the
 installer that minute, and there are zero published versions for
 Homebrew or any other packager to pin against. Tagged releases give
@@ -26,7 +26,7 @@ contract: "v1 means the tarball at tag v1.x.y."
 
 ## When the npm step is red
 
-The `Publish @sonpiaz/watch-cli-mcp to npm` job is `continue-on-error`: npm
+The `Publish @huytrinhx/watch-cli-mcp to npm` job is `continue-on-error`: npm
 granular tokens expire every 90 days and a release should not fail because a
 secret aged out. When it is red, publish by hand from a checkout of the tag:
 
@@ -185,11 +185,11 @@ one per bullet, linked to PR>
 
 ## Schema version
 Output schema: v1 (no change since v0.3.0). See
-[output-schema.md](https://github.com/sonpiaz/watch-cli/blob/vX.Y.Z/docs/output-schema.md).
+[output-schema.md](https://github.com/huytrinhx/watch-cli-win/blob/vX.Y.Z/docs/output-schema.md).
 
 ## Install
-    brew tap sonpiaz/tap && brew install watch-cli            # macOS
-    curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/vX.Y.Z/install.sh | bash
+    brew tap huytrinhx/tap && brew install watch-cli            # macOS
+    curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/vX.Y.Z/install.sh | bash
     WATCH_CLI_VERSION=X.Y.Z curl -fsSL <same-url> | bash       # pin
 
 ## Acknowledgements
@@ -256,33 +256,33 @@ npm run build
 npm publish --access public
 ```
 
-Requires `NPM_TOKEN` repo secret scoped to publish under `@sonpiaz/`.
+Requires `NPM_TOKEN` repo secret scoped to publish under `@huytrinhx/`.
 `mcp-server/package.json` must already carry the correct version —
 the version-bump PR includes a bump of `mcp-server/package.json` to
 match.
 
 ### 6. Bump the Homebrew tap
 
-Opens a PR against `sonpiaz/homebrew-tap` with the new `version` and
+Opens a PR against `huytrinhx/homebrew-tap` with the new `version` and
 `sha256` in `Formula/watch-cli.rb`. Full mechanism in
 [`homebrew.md`](homebrew.md). Requires the `HOMEBREW_TAP_PAT` repo
-secret (fine-grained PAT scoped to `sonpiaz/homebrew-tap`,
+secret (fine-grained PAT scoped to `huytrinhx/homebrew-tap`,
 contents:write + pull-requests:write).
 
 ### Required repo secrets
 
-- `NPM_TOKEN` — step 5; publish under `@sonpiaz/` on npm.
+- `NPM_TOKEN` — step 5; publish under `@huytrinhx/` on npm.
   **Setup (one-time, manual):** generate an Automation token at
-  https://www.npmjs.com/settings/sonpiaz/tokens, then paste into the
+  https://www.npmjs.com/settings/huytrinhx/tokens, then paste into the
   watch-cli repo at Settings → Secrets and variables → Actions →
   New repository secret. Without this, the `publish-mcp` job fails
   and no MCP server is published — the GH Release and tarball are
   unaffected.
 - `HOMEBREW_TAP_PAT` — step 6; push branches + open PRs in
-  `sonpiaz/homebrew-tap`.
+  `huytrinhx/homebrew-tap`.
   **Setup (one-time, manual):** generate a fine-grained PAT at
   https://github.com/settings/personal-access-tokens, scope:
-  resource owner `sonpiaz`, repo access only `sonpiaz/homebrew-tap`,
+  resource owner `huytrinhx`, repo access only `huytrinhx/homebrew-tap`,
   permissions `contents:write` + `pull-requests:write` +
   `metadata:read`, 1-year expiry. Paste into the watch-cli repo at
   Settings → Secrets and variables → Actions. Without this, the
@@ -299,10 +299,10 @@ tagged release tarball.
 
 ```bash
 # default — latest
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash
 
 # pin a specific version
-curl -fsSL https://github.com/sonpiaz/watch-cli/releases/download/v0.3.4/install.sh \
+curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh \
   | WATCH_CLI_VERSION=0.3.4 bash
 ```
 
@@ -339,9 +339,9 @@ locally still works. Only `curl | bash` uses the release tarball.
 1. All five foundation specs merged and signed off:
    `output-schema.md`, `exit-codes.md`, `offline-mode.md`,
    `releases.md`, `homebrew.md`.
-2. Homebrew tap published. `brew install sonpiaz/tap/watch-cli`
+2. Homebrew tap published. `brew install huytrinhx/tap/watch-cli`
    succeeds on a fresh macOS machine ([`homebrew.md`](homebrew.md)).
-3. `@sonpiaz/watch-cli-mcp` is on npm at a version matching
+3. `@huytrinhx/watch-cli-mcp` is on npm at a version matching
    watch-cli (MCP v1.0.0 ships when watch-cli v1.0.0 ships).
 4. CI green on `main` for 30 days. No skipped jobs, no
    `continue-on-error: true` on any required step.
@@ -369,9 +369,9 @@ The implementer must verify end to end before declaring done:
    on a second clean container. Same result.
 4. **Latest install.** Run the `releases/latest/download/install.sh`
    form. Resolves to v0.3.0.
-5. **MCP server publish.** `@sonpiaz/watch-cli-mcp@0.3.0` is on npm,
+5. **MCP server publish.** `@huytrinhx/watch-cli-mcp@0.3.0` is on npm,
    `bin/watch-cli-mcp` works via `npx`.
-6. **Homebrew bump.** A PR opens against `sonpiaz/homebrew-tap`
+6. **Homebrew bump.** A PR opens against `huytrinhx/homebrew-tap`
    titled `watch-cli 0.3.0`; merging makes `brew upgrade watch-cli`
    work. Full Homebrew test plan in [`homebrew.md`](homebrew.md).
 7. **Version mismatch.** Push a tag `v0.3.1` without bumping

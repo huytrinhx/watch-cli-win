@@ -60,7 +60,7 @@ function runWatch(args: string[]): Promise<CliResult> {
         reject(
           new McpError(
             ErrorCode.InternalError,
-            "tag=missing-dep:watch — install watch-cli via https://github.com/sonpiaz/watch-cli (curl install.sh | bash)",
+            "tag=missing-dep:watch — install watch-cli via https://github.com/huytrinhx/watch-cli-win (curl install.sh | bash)",
           ),
         );
         return;
