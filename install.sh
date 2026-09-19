@@ -229,7 +229,7 @@ fi
 
 # ── Symlink bins ──
 mkdir -p "$BIN_LINK_DIR"
-for bin in watch watch-archive dl-video extract-frames transcribe audio-q models; do
+for bin in watch listen watch-archive dl-video extract-frames transcribe audio-q models; do
   ln -sf "$INSTALL_DIR/bin/$bin" "$BIN_LINK_DIR/$bin"
 done
 green "✓ Symlinked binaries to $BIN_LINK_DIR"

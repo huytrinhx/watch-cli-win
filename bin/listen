@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# listen <url> [language] [--cookies <file>] [--format text|json] [--no-cache]
+# Audio counterpart to `watch`: downloads audio only (dl-video
+# --audio-only — no video stream fetched at all) and transcribes it.
+# For when you only want the transcript and don't need frames: lighter
+# and faster than `watch`, since no video bytes are downloaded or
+# decoded just to be thrown away.
+#
+# Shares `watch`'s archive (see lib/archive.sh) — a record written by
+# `listen` has no video_path or frames, but `watch-archive ls|find|get`
+# reads it exactly like a `watch` record. Re-listening to the same
+# source is a cache hit: no re-download, no re-transcription, and the
+# output block is byte-identical to the cold run.
+#
+# Text format (default) — see docs/output-schema.md for the schema this
+# mirrors (minus VIDEO: and FRAMES:, since there is no video):
+#   WATCH_OUTPUT_VERSION: 1
+#   DURATION: <seconds>
+#   TRANSCRIPT:
+#     <full text>
+#   EXIT: <code>
+#
+# JSON format (--format json) — single line:
+#   {"version":1,"duration_sec":…,"transcript":"…"|null,"exit_code":…}
+#
+# Exit codes: see docs/exit-codes.md.
+#   0 success · 1 general · 2 missing-dep · 3 download fail
+#   4 transcribe fail · 64 usage error
+
+set -uo pipefail
+
+# Resolve symlinks so $ROOT_DIR points at the real install dir, not ~/.local.
+SELF="${BASH_SOURCE[0]}"
+while [ -L "$SELF" ]; do
+  SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+  SELF="$(readlink "$SELF")"
+  [[ $SELF != /* ]] && SELF="$SELF_DIR/$SELF"
+done
+SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+ROOT_DIR="$(cd "$SELF_DIR/.." && pwd)"
+# shellcheck source=../lib/version.sh
+source "$ROOT_DIR/lib/version.sh"
+# shellcheck source=../lib/health.sh
+source "$ROOT_DIR/lib/health.sh"
+# shellcheck source=../lib/archive.sh
+source "$ROOT_DIR/lib/archive.sh"
+# shellcheck source=../lib/dotenv.sh
+source "$ROOT_DIR/lib/dotenv.sh"
+# shellcheck source=../lib/shell-safety.sh
+source "$ROOT_DIR/lib/shell-safety.sh"
+watch_cli_warn_if_backgrounded
+
+URL=""
+LANGUAGE=""
+COOKIES_ARG=""
+FORMAT="text"
+NO_CACHE=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --cookies)
+      COOKIES_ARG="--cookies $2"
+      shift 2
+      ;;
+    --cookies=*)
+      COOKIES_ARG="--cookies ${1#*=}"
+      shift
+      ;;
+    --format)
+      FORMAT="${2:-}"
+      shift 2
+      ;;
+    --format=*)
+      FORMAT="${1#*=}"
+      shift
+      ;;
+    --no-cache)
+      NO_CACHE=1
+      shift
+      ;;
+    -h|--help)
+      sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    -V|--version)
+      echo "$WATCH_CLI_VERSION_STRING"
+      exit 0
+      ;;
+    *)
+      if [[ -z "$URL" ]]; then
+        URL="$1"
+      elif [[ -z "$LANGUAGE" ]]; then
+        LANGUAGE="$1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$URL" ]]; then
+  echo "usage: listen <url> [language] [--cookies <file>] [--format text|json] [--no-cache] tag=usage-error" >&2
+  exit 64
+fi
+
+if [[ "$FORMAT" != "text" && "$FORMAT" != "json" ]]; then
+  echo "[listen] error: --format must be 'text' or 'json' (got '$FORMAT') tag=usage-error" >&2
+  exit 64
+fi
+
+# Dependency check up-front so we exit 2, not 1, when a binary is missing.
+for dep in yt-dlp ffmpeg ffprobe jq curl python3; do
+  if ! command -v "$dep" >/dev/null 2>&1; then
+    echo "[listen] error: $dep not found on PATH tag=missing-dep:$dep" >&2
+    exit 2
+  fi
+done
+
+# Pre-flight: upstream platform probe. Not a gate — just warns when
+# yt-dlp's extractor for this domain looks broken today.
+check_platform_for_url "$URL" || true
+
+AUDIO=""
+DUR_INT=0
+TRANSCRIPT=""
+TR_RC=0
+FROM_CACHE=0
+
+# ── Archive lookup ──
+# A record only counts when its transcript is non-empty (see
+# lib/archive.sh), so a previously failed transcribe never masks a retry.
+if [[ $NO_CACHE -eq 0 ]] && watch_archive_has "$URL"; then
+  DUR_INT="$(watch_archive_field "$URL" duration)"
+  TRANSCRIPT="$(watch_archive_field "$URL" transcript)"
+  echo "[listen] cache hit — skipping download and transcription" >&2
+  FROM_CACHE=1
+fi
+
+if [[ $FROM_CACHE -eq 0 ]]; then
+  echo "[listen] downloading audio for $URL …" >&2
+  # shellcheck disable=SC2086
+  AUDIO="$("$SELF_DIR/dl-video" --audio-only "$URL" $COOKIES_ARG)"
+  DL_RC=$?
+  if [[ $DL_RC -ne 0 ]]; then
+    exit $DL_RC
+  fi
+  echo "[listen] audio: $AUDIO" >&2
+
+  DUR="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$AUDIO" 2>/dev/null || echo 0)"
+  DUR_INT="${DUR%.*}"
+  [[ -z "$DUR_INT" ]] && DUR_INT=0
+
+  echo "[listen] transcribing audio …" >&2
+  SEG_FILE="$(mktemp)"
+  if [[ -n "$LANGUAGE" ]]; then
+    TRANSCRIPT="$("$SELF_DIR/transcribe" "$AUDIO" "$LANGUAGE" --segments-out "$SEG_FILE")"
+  else
+    TRANSCRIPT="$("$SELF_DIR/transcribe" "$AUDIO" --segments-out "$SEG_FILE")"
+  fi
+  TR_RC=$?
+
+  # Store only on success — an empty transcript is not an answer worth
+  # remembering. No video_path, no frames: watch_archive_put stores both
+  # as null/empty when passed "", which lib/archive.sh already handles.
+  if [[ $TR_RC -eq 0 && -n "$TRANSCRIPT" ]]; then
+    INFO_JSON="${AUDIO%.*}.info.json"
+    [[ -f "$INFO_JSON" ]] || INFO_JSON=""
+    watch_archive_put "$URL" "" "$DUR_INT" "" "$SEG_FILE" "$INFO_JSON" \
+      || echo "[listen] warning: could not write archive record" >&2
+  fi
+  rm -f "$SEG_FILE"
+fi
+
+EXIT_CODE=0
+if [[ $TR_RC -ne 0 ]]; then
+  EXIT_CODE=4
+  TRANSCRIPT=""
+fi
+
+# ── Emit the contract block ──
+if [[ "$FORMAT" == "json" ]]; then
+  if [[ $TR_RC -ne 0 ]]; then
+    jq -cn \
+      --argjson dur "$DUR_INT" \
+      --argjson rc "$EXIT_CODE" \
+      '{version:1, duration_sec:$dur, transcript:null, exit_code:$rc}'
+  else
+    jq -cn \
+      --argjson dur "$DUR_INT" \
+      --arg transcript "$TRANSCRIPT" \
+      --argjson rc "$EXIT_CODE" \
+      '{version:1, duration_sec:$dur, transcript:$transcript, exit_code:$rc}'
+  fi
+else
+  echo "WATCH_OUTPUT_VERSION: 1"
+  echo "DURATION: $DUR_INT"
+  echo "TRANSCRIPT:"
+  if [[ $TR_RC -ne 0 ]]; then
+    echo "  null"
+  else
+    echo "$TRANSCRIPT" | sed 's/^/  /'
+  fi
+  echo "EXIT: $EXIT_CODE"
+fi
+
+exit $EXIT_CODE

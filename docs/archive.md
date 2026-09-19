@@ -1,8 +1,9 @@
 # The archive
 
-Every successful `watch` run is written to a record on disk. Watching the
-same source again reads that record instead of paying for speech-to-text a
-second time.
+Every successful `watch` or `listen` run is written to a record on disk.
+Watching (or listening to) the same source again reads that record instead
+of paying for speech-to-text a second time. A `listen` record has no
+`video_path` or frames — `watch-archive` reads both kinds the same way.
 
 This is a cost and latency optimization layered *under* the output
 contract, not a change to it. The block `watch` prints is byte-identical

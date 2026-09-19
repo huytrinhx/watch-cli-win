@@ -62,7 +62,7 @@ jobs:
 
       - name: Bash syntax check
         run: |
-          bash -n bin/watch bin/dl-video bin/extract-frames bin/transcribe bin/audio-q bin/models
+          bash -n bin/watch bin/listen bin/dl-video bin/extract-frames bin/transcribe bin/audio-q bin/models
 
       - name: Make bins executable
         run: chmod +x bin/*
@@ -74,13 +74,16 @@ jobs:
           # to clone-and-link from GitHub. Skip it and replicate the symlink
           # step inline against the checked-out tree.
           mkdir -p "$HOME/.local/bin"
-          for bin in watch dl-video extract-frames transcribe audio-q models; do
+          for bin in watch listen dl-video extract-frames transcribe audio-q models; do
             ln -sf "$GITHUB_WORKSPACE/bin/$bin" "$HOME/.local/bin/$bin"
           done
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Smoke — watch --help
         run: watch --help
+
+      - name: Smoke — listen --help
+        run: listen --help
 
       - name: Smoke — transcribe --help
         run: transcribe --help
@@ -114,6 +117,18 @@ jobs:
           out="$(watch --version)"
           echo "$out"
           [[ "$out" =~ watch-cli ]] || { echo "expected 'watch-cli' in version output" >&2; exit 1; }
+
+      - name: Negative — listen with no args must exit 64
+        run: |
+          set +e
+          listen
+          rc=$?
+          set -e
+          if [[ $rc -ne 64 ]]; then
+            echo "expected exit 64 from 'listen' with no args, got $rc" >&2
+            exit 1
+          fi
+          echo "OK: rc=$rc"
 
       - name: Output schema test
         run: bash tests/test-output-schema.sh

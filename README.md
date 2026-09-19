@@ -322,12 +322,19 @@ watch <url> [frame-count] [--cookies <file>] [--no-cache]
   Orchestrator. Downloads, extracts frames, transcribes — one block out.
   Archives the result; watching the same URL again reuses it.
 
-watch-archive ls | find <query> | get <id|url> | where
-  Query everything you've watched. `find` returns the timestamp of the
-  matching line, so you get a seek position, not a video to re-watch.
+listen <url> [language] [--cookies <file>] [--no-cache]
+  Audio counterpart to `watch` — transcript only, no video download, no
+  frames. Faster and lighter when you don't need the visual track.
+  Shares the same archive as `watch`.
 
-dl-video <url> [out-dir] [--cookies <file>]
-  Just download the video. Returns the local mp4 path.
+watch-archive ls | find <query> | get <id|url> | where
+  Query everything you've watched (or listened to). `find` returns the
+  timestamp of the matching line, so you get a seek position, not a
+  video to re-watch.
+
+dl-video <url> [out-dir] [--cookies <file>] [--audio-only]
+  Just download the video (or, with --audio-only, just the audio — no
+  video stream fetched at all). Returns the local file path.
 
 extract-frames <video> [count] [out-dir]
   Pull N evenly-spaced JPG frames. Default 8.

@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# dl-video <url> [out-dir]
+# dl-video <url> [out-dir] [--audio-only]
 # Downloads a video from any yt-dlp-supported platform (YouTube, X,
 # LinkedIn, TikTok, Reddit, Vimeo, Facebook, …) into a local mp4 and
 # prints the absolute path on stdout. Stderr carries progress.
+#
+# --audio-only skips the video stream entirely (yt-dlp -f bestaudio,
+# extracted to mp3) instead of downloading+merging video too — for a
+# transcript-only workflow (see bin/listen) where the video bytes would
+# just be decoded and thrown away by bin/transcribe anyway.
 #
 # Cookie fallback (4 tiers, tried in order):
 #   1. Anonymous fetch — works for all public videos.
@@ -39,6 +44,7 @@ watch_cli_warn_if_backgrounded
 URL=""
 OUTDIR="/tmp/dl-video"
 COOKIES_FILE=""
+AUDIO_ONLY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,8 +56,12 @@ while [[ $# -gt 0 ]]; do
       COOKIES_FILE="${1#*=}"
       shift
       ;;
+    --audio-only)
+      AUDIO_ONLY=1
+      shift
+      ;;
     -h|--help)
-      sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -V|--version)
@@ -70,7 +80,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$URL" ]]; then
-  echo "usage: dl-video <url> [out-dir] [--cookies <file>] tag=usage-error" >&2
+  echo "usage: dl-video <url> [out-dir] [--cookies <file>] [--audio-only] tag=usage-error" >&2
   exit 64
 fi
 
@@ -79,46 +89,78 @@ if ! command -v yt-dlp >/dev/null 2>&1; then
   exit 2
 fi
 
+# --audio-only always extracts to mp3, which needs ffmpeg as a
+# postprocessor — unlike the video path, where ffmpeg is only preferred,
+# not required (see the FORMAT selection below).
+if (( AUDIO_ONLY )) && ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "[dl-video] error: --audio-only requires ffmpeg on PATH. Install via 'sudo apt install ffmpeg'. tag=missing-dep:ffmpeg" >&2
+  exit 2
+fi
+
 mkdir -p "$OUTDIR"
 
-# Idempotent cache: same URL → same output file.
+# Idempotent cache: same URL → same output file. Audio-only downloads
+# get their own extension (and therefore their own cache slot) so a
+# prior `dl-video <url>` and `dl-video --audio-only <url>` never collide
+# on the same hash — they're different artifacts of the same source.
 HASH="$(echo -n "$URL" | watch_hash_sha1_stdin | cut -c1-12)"
-OUT="$OUTDIR/$HASH.mp4"
+if (( AUDIO_ONLY )); then
+  OUT="$OUTDIR/$HASH.audio.mp3"
+else
+  OUT="$OUTDIR/$HASH.mp4"
+fi
 if [[ -s "$OUT" ]]; then
   echo "$OUT"
   exit 0
 fi
 
-# Modern YouTube rarely offers a single-file (progressive) format above
-# ~360p any more — video and audio are separate streams that need
-# merging. A progressive-only selector increasingly resolves to nothing
-# at all ("Requested format is not available") once that lone low-res
-# fallback is unavailable for a given client/PO-token state. ffmpeg is
-# already a hard dependency (checked in bin/watch's dep list), so prefer
-# the merge and only fall back to a single muxed file — which is still
-# what LinkedIn/Facebook expose, and what to use when ffmpeg is missing
-# (dl-video, unlike watch, doesn't require ffmpeg to run standalone).
-if command -v ffmpeg >/dev/null 2>&1; then
+if (( AUDIO_ONLY )); then
+  # No video stream requested at all — skips fetching bytes that
+  # bin/transcribe would just decode and discard.
+  FORMAT='bestaudio/best'
+elif command -v ffmpeg >/dev/null 2>&1; then
+  # Modern YouTube rarely offers a single-file (progressive) format above
+  # ~360p any more — video and audio are separate streams that need
+  # merging. A progressive-only selector increasingly resolves to nothing
+  # at all ("Requested format is not available") once that lone low-res
+  # fallback is unavailable for a given client/PO-token state. ffmpeg is
+  # already a hard dependency (checked in bin/watch's dep list), so prefer
+  # the merge and only fall back to a single muxed file — which is still
+  # what LinkedIn/Facebook expose, and what to use when ffmpeg is missing
+  # (dl-video, unlike watch, doesn't require ffmpeg to run standalone).
   FORMAT='bestvideo[height<=720]+bestaudio/best[height<=720]/best'
 else
   FORMAT='best[height<=720]/best'
 fi
 
 # --write-info-json drops a <hash>.info.json sidecar (title, uploader,
-# duration) next to the mp4. It rides along with the download already in
-# flight, so naming an archived video later costs no extra request. stdout
-# is unchanged: still just the mp4 path.
+# duration) next to the media file. It rides along with the download
+# already in flight, so naming an archived record later costs no extra
+# request. stdout is unchanged: still just the output path.
 run_dl() {
-  yt-dlp \
-    --no-playlist \
-    --no-warnings \
-    --no-progress \
-    --merge-output-format mp4 \
-    --write-info-json \
-    -f "$FORMAT" \
-    -o "$OUT" \
-    "$@" \
-    "$URL" >&2
+  if (( AUDIO_ONLY )); then
+    yt-dlp \
+      --no-playlist \
+      --no-warnings \
+      --no-progress \
+      -x --audio-format mp3 \
+      --write-info-json \
+      -f "$FORMAT" \
+      -o "$OUT" \
+      "$@" \
+      "$URL" >&2
+  else
+    yt-dlp \
+      --no-playlist \
+      --no-warnings \
+      --no-progress \
+      --merge-output-format mp4 \
+      --write-info-json \
+      -f "$FORMAT" \
+      -o "$OUT" \
+      "$@" \
+      "$URL" >&2
+  fi
 }
 
 # WSL2 runs watch-cli as a Linux process, so --cookies-from-browser only

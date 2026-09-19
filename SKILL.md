@@ -8,13 +8,15 @@ metadata:
     requires:
       bins:
         - watch
+        - listen
     install:
-      - id: release-0.3.4
+      - id: curl-install
         kind: shell
-        command: "curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/download/v0.3.4/install.sh | WATCH_CLI_VERSION=0.3.4 bash"
+        command: "curl -fsSL https://github.com/huytrinhx/watch-cli-win/releases/latest/download/install.sh | bash"
         bins:
           - watch
-        label: "Install watch-cli v0.3.4 (pinned release, SHA256-verified tarball)"
+          - listen
+        label: "Install watch-cli (curl, latest release, SHA256-verified tarball)"
 ---
 
 Watch any social video → get an architecture diagram, working component, runnable notebook, or step-by-step cheat sheet — automatically.
@@ -29,6 +31,8 @@ Reach for `watch` whenever the user gives you a video URL and wants you to do so
 - The user asks to "summarize", "explain", or "walk me through" content at a video URL.
 - The user asks to "implement", "clone", "build", or "replicate" what is on screen in a video.
 - The user asks to "extract architecture from", "diagram", or "turn this paper talk into code" at a video URL.
+
+Reach for `listen` instead of `watch` when the request is transcript-only and nothing in it needs the visual track — "what did they say about X", "summarize this podcast/interview", "get me a transcript of this talk". `listen` skips the video download entirely (audio-only, no frames), so it's faster and cheaper than `watch` for these. If there's any chance the user wants visual content (a diagram shown on screen, code, a UI demo), use `watch` — `listen` has no frames to fall back on.
 
 Supported platforms: YouTube, X / Twitter, LinkedIn, TikTok, Vimeo, Reddit, Facebook. Every URL is fetched anonymously. A login-walled URL fails with `tag=download-auth`; watch-cli does not touch browser sessions on its own. If the user wants to use one, they opt in per run with `WATCH_BROWSER=auto` (or a browser name), which lets yt-dlp read cookies from the local browser profile and send them only to that platform; `--cookies <file>` uses an exported cookie file instead. Ask the user before setting either; never set them silently.
 

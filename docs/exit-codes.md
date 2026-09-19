@@ -1,7 +1,7 @@
 # Exit codes
 
-watch-cli scripts (`watch`, `dl-video`, `extract-frames`, `transcribe`,
-`audio-q`, `models`) follow a small, documented set of exit codes.
+watch-cli scripts (`watch`, `listen`, `dl-video`, `extract-frames`,
+`transcribe`, `audio-q`, `models`) follow a small, documented set of exit codes.
 Wrapping scripts and agents can branch on the code to distinguish a
 missing dependency from a transient network failure from a usage
 mistake, and can recover from partial success (frames extracted,
