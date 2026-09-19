@@ -85,10 +85,18 @@ jobs:
           echo "sha256:  ${SHA256}"
 
       - name: Generate release notes
-        # Auto-draft from squashed PR titles since the previous tag.
-        # docs/releases.md "Release notes template" specifies the
-        # final shape; this seeds the draft and the maintainer
-        # hand-edits via the GH Release UI after the run.
+        # Auto-draft since the previous tag. docs/releases.md "Release
+        # notes template" specifies the final shape; this seeds the
+        # draft and the maintainer hand-edits via the GH Release UI
+        # after the run.
+        #
+        # Lists every commit, not just merge commits: `--merges` only
+        # finds PR-merge commits, so a tag cut from commits pushed
+        # directly to main (no PR) found nothing and silently rendered
+        # an empty "What's new" section on every release for a while.
+        # The version-bump commit itself (`release: vX.Y.Z`) is
+        # filtered out since it's just the marker for this same
+        # release, not a change to list under it.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -99,9 +107,14 @@ jobs:
             echo
             echo "## What's new"
             if [[ -n "$PREV_TAG" ]]; then
-              git log --merges --pretty=format:"- %s" "${PREV_TAG}..${GITHUB_REF_NAME}" \
-                | sed 's/Merge pull request #\([0-9]*\) from [^ ]* /(#\1) /' \
-                || echo "- _(no merge commits found between ${PREV_TAG} and ${GITHUB_REF_NAME})_"
+              NOTES="$(git log --pretty=format:"- %s" "${PREV_TAG}..${GITHUB_REF_NAME}" \
+                | grep -v '^- release: v' \
+                | sed 's/Merge pull request #\([0-9]*\) from [^ ]* /(#\1) /')"
+              if [[ -n "$NOTES" ]]; then
+                echo "$NOTES"
+              else
+                echo "- _(no changes found between ${PREV_TAG} and ${GITHUB_REF_NAME})_"
+              fi
             else
               echo "- Initial tagged release."
             fi
