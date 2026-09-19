@@ -160,6 +160,43 @@ Always run `watch <url>` from the Ubuntu/WSL terminal, not from
 PowerShell or cmd.exe — those shells can't execute Bash scripts. See
 [docs/platforms.md](docs/platforms.md#windows) for details and gotchas.
 
+**If `transcribe` / `listen` / `audio-q` seem to hang or crawl** —
+these upload audio to Kyma (or Groq/Google), and on some WSL2 setups
+that upload can be pathologically slow (10–40 KB/s) even though
+everything else about the machine is fast: Windows itself uploads at
+full speed, `/tmp` reads/writes at hundreds of MB/s, and a transfer
+starts fast then stalls repeatedly. That combination — **Windows fast,
+WSL slow** — points at WSL's *virtual networking path* specifically,
+not Wi-Fi, not disk, not Kyma. Don't chase the Wi-Fi adapter first.
+
+Confirm it with a throwaway upload test, then compare the number
+against the same test run from PowerShell:
+
+```bash
+dd if=/dev/urandom of=/tmp/diag.bin bs=1M count=10
+curl -w '\nupload: %{speed_upload} bytes/sec\n' \
+  -o /dev/null -F "file=@/tmp/diag.bin" https://httpbin.org/post
+```
+
+If WSL is dramatically slower than Windows on that same test, the fix
+that resolved this for one user was switching WSL's networking
+backend — lowering the interface MTU and disabling TCP
+timestamps/offload each helped only marginally, but changing
+`networkingMode` in `%USERPROFILE%\.wslconfig` to a backend supported
+by their WSL version (`virtioproxy`) fixed it outright:
+
+```ini
+[wsl2]
+networkingMode=virtioproxy
+```
+
+Then from PowerShell: `wsl --shutdown`, reopen Ubuntu, and re-run the
+`curl` test above to confirm. (`networkingMode=mirrored` is the more
+commonly-documented alternative and worth trying first — it didn't fix
+this particular case, but it's a smaller change and fixes a different,
+more common class of WSL2 networking issue.) See
+[docs/platforms.md](docs/platforms.md#windows) for more on this.
+
 <details>
 <summary><strong>More install options</strong> — Claude Code skill, pinned version, from a clone, optional flags</summary>
 

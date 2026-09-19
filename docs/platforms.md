@@ -50,6 +50,67 @@ Two things that trip people up:
 without WSL) and refuses to run, printing the WSL2 setup steps instead of
 limping through a half-working install.
 
+### Slow or stalled uploads (transcribe / listen / audio-q)
+
+`transcribe`, `listen`, and `audio-q` upload audio to Kyma (or
+Groq/Google directly in BYOK mode). On some WSL2 setups that specific
+kind of traffic — a large, sustained POST body — is pathologically slow
+(10–40 KB/s) or collapses to near-zero mid-transfer, even though
+everything else about the machine is fine. The diagnostic signature,
+confirmed on one Windows 11 / WSL 2.7 machine:
+
+- PowerShell (native Windows) upload speed to the same test endpoint:
+  normal (roughly matching the connection's real bandwidth).
+- The same upload from inside WSL2: 10–40 KB/s, often starting fast
+  and then stalling repeatedly.
+- `/tmp` read/write speed inside WSL2: hundreds of MB/s (rules out
+  disk/filesystem — and note `/tmp` is WSL2's own native ext4, not a
+  `/mnt/c/...` Windows-mounted path, so DrvFs isn't a factor either).
+- A raw TCP test (`iperf3`, no HTTP/TLS/file involved at all) showed
+  the same collapse — near-zero throughput, a congestion window stuck
+  at a few KB, and a high retransmit count. That rules out curl, HTTP,
+  and multipart uploads specifically: it's below the application layer.
+
+**Windows fast, WSL slow, on a large upload specifically** is the
+pattern to recognize — it points at WSL2's virtual networking path,
+not the Wi-Fi adapter, not the ISP, not Kyma. Confirm with a throwaway
+upload test and compare the same test run from PowerShell:
+
+```bash
+dd if=/dev/urandom of=/tmp/diag.bin bs=1M count=10
+curl -w '\nupload: %{speed_upload} bytes/sec\n' \
+  -o /dev/null -F "file=@/tmp/diag.bin" https://httpbin.org/post
+```
+
+What was tried, in order, on the machine where this was root-caused:
+
+| Fix attempted | Result |
+|---|---|
+| `networkingMode=mirrored` in `.wslconfig` | No improvement |
+| Lowering the WSL interface MTU (`ip link set dev eth0 mtu 1400`) | Temporary improvement, not a fix |
+| Disabling TCP timestamps | ~10 KB/s → ~40 KB/s — better, still bad |
+| Disabling checksum offload / RSC (guest and host adapter) | No meaningful improvement |
+| `networkingMode=virtioproxy` in `.wslconfig` | **Fixed it outright** |
+
+`%USERPROFILE%\.wslconfig`:
+
+```ini
+[wsl2]
+networkingMode=virtioproxy
+```
+
+Then from PowerShell: `wsl --shutdown`, reopen Ubuntu, and re-run the
+`curl` test above to confirm. Try `networkingMode=mirrored` first if
+you haven't already — it's the more common fix for WSL2 networking
+oddities generally and a smaller change, even though it didn't resolve
+this particular case. `virtioproxy` requires a WSL version that
+supports it (`wsl --version`).
+
+The general lesson, independent of the specific fix: when native
+Windows networking is healthy but sustained WSL TCP traffic collapses,
+changing WSL's networking backend is often more effective than tuning
+Linux-side TCP settings, MTU, or NIC offload flags one at a time.
+
 ## Tested versions
 
 This matrix was last verified against:
